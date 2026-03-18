@@ -3,6 +3,7 @@
 A Chrome extension (Manifest V3) that automatically finds recruiters at any company while you browse LinkedIn job postings. Opens as a persistent side panel and works in the background even when the panel is closed.
 
 ---
+<img width="565" height="883" alt="image" src="https://github.com/user-attachments/assets/156a54f0-0ab2-45bf-9964-289a96ccd806" />
 
 ## Features
 
