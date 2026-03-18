@@ -66,6 +66,7 @@ Paste a list of company names (one per line or comma-separated) and scan them al
 - **Export CSV** — all cached recruiters as a spreadsheet
 - **Export Backup** / **Import Backup** — full JSON backup of your cache
 - **Refresh Logos** — backfills missing company logos for older cache entries
+<img width="578" height="887" alt="image" src="https://github.com/user-attachments/assets/8e74afb1-37a3-4508-8e36-80ea57f06d77" />
 
 ### Job Description Copy
 From any LinkedIn job page, a **JD** button in the meta row lets you copy the job title + full job description to clipboard in one click. Works on both the jobs search view and direct `/jobs/view/` pages.
