@@ -1,0 +1,1358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f3f2ef;
+      width: 100%;
+      min-width: 320px;
+      color: #1d1d1d;
+    }
+
+    header {
+      background: #0a66c2;
+      color: white;
+      padding: 13px 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    header h1 { font-size: 14px; font-weight: 700; }
+    header .company {
+      font-size: 11px;
+      opacity: 0.85;
+      margin-left: auto;
+      max-width: 160px;
+      text-align: right;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* ── Tab bar ── */
+    .tab-bar {
+      display: flex;
+      background: white;
+      border-bottom: 2px solid #e0e0e0;
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 9px 0;
+      font-size: 12px;
+      font-weight: 600;
+      color: #666;
+      background: none;
+      border: none;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -2px;
+      transition: color 0.2s;
+    }
+
+    .tab-btn.active {
+      color: #0a66c2;
+      border-bottom-color: #0a66c2;
+    }
+
+    .tab-btn:hover:not(.active) { color: #333; }
+
+    /* ── Panels ── */
+    .panel { display: none; }
+    .panel.active { display: block; }
+
+    #main { padding: 12px; }
+
+    #statusBox {
+      background: white;
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 12px;
+      color: #444;
+      margin-bottom: 10px;
+      min-height: 36px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.07);
+    }
+
+    #progressBar {
+      height: 4px;
+      background: #ddd;
+      border-radius: 4px;
+      margin-bottom: 10px;
+      overflow: hidden;
+      display: none;
+    }
+
+    #progressFill {
+      height: 100%;
+      background: #0a66c2;
+      border-radius: 4px;
+      transition: width 0.4s ease;
+      width: 0%;
+    }
+
+    .scan-info-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+
+    #scanBtn {
+      background: #0a66c2;
+      color: white;
+      border: none;
+      padding: 7px 16px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    #scanBtn:hover { background: #004182; }
+    #scanBtn:disabled { background: #aaa; cursor: not-allowed; }
+
+    .results-search-wrap { position: relative; margin-bottom: 4px; }
+    #resultsSearch {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 5px 28px 5px 10px;
+      border: 1px solid #ddd;
+      border-radius: 16px;
+      font-size: 11px;
+      outline: none;
+    }
+    #resultsSearch:focus { border-color: #0a66c2; }
+    #clearResultsSearch {
+      position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+      background: none; border: none; cursor: pointer; font-size: 11px;
+      color: #999; padding: 2px; line-height: 1;
+    }
+    #clearResultsSearch:hover { color: #333; }
+
+    /* ── Auto-scan toggle ── */
+    .auto-scan-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      padding: 4px 0;
+    }
+
+    .auto-scan-label {
+      font-size: 11px;
+      color: #555;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .as-status {
+      font-size: 10px;
+      font-weight: 600;
+      padding: 1px 6px;
+      border-radius: 8px;
+      background: #e8f0fe;
+      color: #0a66c2;
+    }
+
+    .as-status.off { background: #f0f0f0; color: #999; }
+
+    .toggle-switch { position: relative; width: 36px; height: 20px; flex-shrink: 0; }
+    .toggle-switch input { display: none; }
+
+    .toggle-slider {
+      position: absolute;
+      cursor: pointer;
+      inset: 0;
+      background: #ccc;
+      border-radius: 20px;
+      transition: background 0.2s;
+    }
+
+    .toggle-slider:before {
+      content: '';
+      position: absolute;
+      width: 14px; height: 14px;
+      left: 3px; top: 3px;
+      background: white;
+      border-radius: 50%;
+      transition: transform 0.2s;
+    }
+
+    .toggle-switch input:checked + .toggle-slider { background: #0a66c2; }
+    .toggle-switch input:checked + .toggle-slider:before { transform: translateX(16px); }
+
+    /* ── Queue panel ── */
+    #queuePanel {
+      margin-bottom: 8px;
+    }
+
+    .queue-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      padding: 4px 8px;
+      background: white;
+      border-radius: 6px;
+      margin-bottom: 4px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+    }
+
+    .queue-item-icon { flex-shrink: 0; }
+    .queue-item-name { flex: 1; font-weight: 600; color: #333; text-transform: capitalize; }
+    .queue-item-count { font-size: 10px; color: #057642; font-weight: 600; }
+    .queue-item.scanning .queue-item-name { color: #0a66c2; }
+    .queue-item.done .queue-item-name { color: #888; }
+
+    #copyBtn {
+      background: white;
+      color: #0a66c2;
+      border: 1.5px solid #0a66c2;
+      padding: 7px 18px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      width: 100%;
+      margin-top: 8px;
+      display: none;
+    }
+
+    #copyBtn:hover { background: #e8f0fe; }
+
+    #results {
+      margin-top: 10px;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+
+    .collapse-controls {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 4px;
+    }
+
+    #resultsSearch {
+      flex: 1;
+      padding: 3px 9px;
+      font-size: 11px;
+      border: 1.5px solid #ccc;
+      border-radius: 12px;
+      outline: none;
+      font-family: inherit;
+      color: #1d1d1d;
+      min-width: 0;
+    }
+
+    #resultsSearch:focus { border-color: #0a66c2; }
+
+    .collapse-btns { display: flex; gap: 6px; flex-shrink: 0; }
+
+    .ctrl-btn {
+      background: none;
+      border: 1px solid #ccc;
+      color: #666;
+      font-size: 10px;
+      padding: 2px 10px;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+
+    .ctrl-btn:hover { border-color: #0a66c2; color: #0a66c2; background: #f0f5ff; }
+
+    .section-label {
+      font-size: 10.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: #888;
+      letter-spacing: 0.5px;
+      margin: 12px 0 5px;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      user-select: none;
+    }
+
+    .section-label:hover { color: #555; }
+
+    .chevron {
+      font-style: normal;
+      font-size: 11px;
+      transition: transform 0.2s;
+      display: inline-block;
+    }
+
+    .section-label.collapsed .chevron { transform: rotate(-90deg); }
+
+    .section-label-actions { display: flex; align-items: center; gap: 6px; }
+
+    .open-section-btn {
+      font-size: 9.5px;
+      padding: 1px 6px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      background: none;
+      color: #555;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .open-section-btn:hover { border-color: #0a66c2; color: #0a66c2; background: #f0f5ff; }
+    .copy-section-btn { font-size: 9.5px; padding: 1px 6px; border: 1px solid #ccc; border-radius: 4px; background: none; color: #555; cursor: pointer; white-space: nowrap; }
+    .copy-section-btn:hover { border-color: #0a66c2; color: #0a66c2; background: #f0f5ff; }
+
+    .open-all-btn { color: #0a66c2; border-color: #0a66c2; }
+    .copy-selected-btn { color: #fff; background: #0a66c2; border-color: #0a66c2; font-weight: 600; }
+    .copy-selected-btn:hover { background: #084e96; border-color: #084e96; color: #fff; }
+
+    .copy-selected-row {
+      display: none;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 0 2px;
+    }
+    .copy-selected-row.visible { display: flex; }
+    .copy-selected-row .copy-selected-btn { flex: 1; font-size: 11px; padding: 5px 10px; }
+    .clear-selection-btn {
+      font-size: 11px; padding: 5px 10px; white-space: nowrap;
+      color: #888; border-color: #ccc;
+    }
+    .clear-selection-btn:hover { color: #c0392b; border-color: #c0392b; background: #fdecea; }
+
+    .card-name-row { display: flex; align-items: center; gap: 6px; }
+    .recruiter-check { flex-shrink: 0; width: 14px; height: 14px; cursor: pointer; margin: 0; }
+
+    .section-cards.collapsed { display: none; }
+
+    .card {
+      background: white;
+      border-radius: 8px;
+      padding: 9px 12px;
+      margin-bottom: 6px;
+      border-left: 3px solid #0a66c2;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+      position: relative;
+    }
+
+    .card.has-photo { padding-right: 58px; }
+
+    .recruiter-photo {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 1.5px solid #e0e0e0;
+      background: #f0f4ff;
+    }
+
+    .card.coord   { border-left-color: #f5a623; }
+    .card.senior  { border-left-color: #8b5cf6; }
+    .card.general { border-left-color: #57c0a0; }
+    .card.talent  { border-left-color: #ec4899; }
+
+    .card-name { font-size: 13px; font-weight: 700; }
+
+    .badge {
+      display: inline-block;
+      font-size: 9.5px;
+      padding: 1px 6px;
+      border-radius: 10px;
+      margin-left: 5px;
+      font-weight: 600;
+      vertical-align: middle;
+    }
+
+    .b-tech   { background: #dbeafe; color: #1d4ed8; }
+    .b-coord  { background: #fef3c7; color: #92400e; }
+    .b-senior { background: #ede9fe; color: #5b21b6; }
+    .b-talent { background: #fce7f3; color: #9d174d; }
+
+    .card-title {
+      font-size: 11px;
+      color: #666;
+      margin: 2px 0 5px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .card-url a {
+      font-size: 11px;
+      color: #0a66c2;
+      text-decoration: none;
+      word-break: break-all;
+    }
+
+    .card-url a:hover { text-decoration: underline; }
+
+    .keywords-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin-bottom: 10px;
+    }
+
+    .kw-chip {
+      font-size: 10px;
+      background: #e0e7ff;
+      color: #3730a3;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-weight: 600;
+    }
+
+    #companyMeta {
+      font-size: 11px;
+      color: #666;
+      padding: 0 2px 6px;
+      display: none;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .meta-sep { color: #ddd; }
+    .meta-visa { font-weight: 600; }
+    .meta-visa-yes { color: #057642; }
+    .meta-visa-no  { color: #c0392b; }
+    .meta-visa-na  { color: #aaa; font-weight: 400; }
+
+    .copy-jd-chip {
+      background: none;
+      border: 1px solid #ccc;
+      color: #666;
+      font-size: 10px;
+      padding: 2px 8px;
+      border-radius: 10px;
+      cursor: pointer;
+      margin-left: 2px;
+      flex-shrink: 0;
+      font-family: inherit;
+    }
+    .copy-jd-chip:hover { border-color: #0a66c2; color: #0a66c2; background: #f0f5ff; }
+
+    #techStack {
+      display: none;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 4px;
+      padding: 0 2px 8px;
+      font-size: 10.5px;
+    }
+
+    .tech-label {
+      font-size: 10.5px;
+      color: #888;
+      font-weight: 600;
+      margin-right: 2px;
+      flex-shrink: 0;
+    }
+
+    .tech-chip {
+      background: #eef2ff;
+      color: #3730a3;
+      padding: 2px 7px;
+      border-radius: 8px;
+      white-space: nowrap;
+    }
+
+    #error { color: #c0392b; font-size: 12px; margin-top: 8px; display: none; }
+
+    /* ── History panel ── */
+    #historyPanel { padding: 12px; }
+
+    #historySearch {
+      width: 100%;
+      padding: 7px 10px;
+      font-size: 12px;
+      border: 1.5px solid #ccc;
+      border-radius: 20px;
+      outline: none;
+      margin-bottom: 10px;
+    }
+
+    #historySearch:focus { border-color: #0a66c2; }
+
+    .history-search-wrap { position: relative; margin-bottom: 4px; }
+
+    #clearSearchBtn {
+      display: none;
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 13px;
+      color: #999;
+      padding: 0;
+      line-height: 1;
+    }
+
+    #clearSearchBtn:hover { color: #333; }
+
+    .history-search-wrap #historySearch { margin-bottom: 0; padding-right: 28px; }
+
+    #clearHistoryBtn {
+      background: white;
+      color: #c0392b;
+      border: 1.5px solid #c0392b;
+      padding: 5px 14px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-bottom: 10px;
+      float: right;
+    }
+
+    #clearHistoryBtn:hover { background: #fdecea; }
+
+    #historyList { max-height: 420px; overflow-y: auto; clear: both; }
+
+    .history-selection-bar {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 0 2px;
+      border-top: 1px solid #eee;
+      margin-top: 4px;
+    }
+    .history-selection-bar.visible { display: flex; }
+    .history-selection-bar span { font-size: 11px; color: #555; flex: 1; }
+    .history-selection-bar button {
+      font-size: 11px; padding: 4px 10px; border-radius: 14px; border: 1px solid #0a66c2;
+      background: white; color: #0a66c2; cursor: pointer; white-space: nowrap;
+    }
+    .history-selection-bar button:hover { background: #e8f0fe; }
+    #histOpenSelected { background: #0a66c2; color: white; }
+    #histOpenSelected:hover { background: #084e96; }
+
+    .history-company {
+      background: white;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.07);
+      overflow: hidden;
+    }
+
+    .history-company-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 9px 12px;
+      cursor: pointer;
+      background: #f9f9f9;
+      border-bottom: 1px solid #eee;
+    }
+
+    .history-company-header:hover { background: #f0f4ff; }
+
+    #historyStats {
+      font-size: 11px;
+      color: #888;
+      padding: 4px 2px 8px;
+      display: none;
+    }
+
+    .company-logo {
+      width: 26px;
+      height: 26px;
+      border-radius: 4px;
+      object-fit: contain;
+      border: 1px solid #e0e0e0;
+      flex-shrink: 0;
+      background: white;
+    }
+
+    .company-logo-fallback {
+      width: 26px;
+      height: 26px;
+      border-radius: 4px;
+      background: #e8f0fe;
+      color: #0a66c2;
+      font-size: 10px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .history-company-name-wrap {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .history-company-name {
+      font-size: 13px;
+      font-weight: 700;
+      color: #0a66c2;
+      text-transform: capitalize;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .history-emp-count {
+      font-size: 10px;
+      color: #aaa;
+      font-weight: 400;
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
+
+    .rename-company-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 11px;
+      padding: 1px 3px;
+      opacity: 0.35;
+      flex-shrink: 0;
+      border-radius: 3px;
+    }
+
+    .rename-company-btn:hover { opacity: 1; background: #e8f0fe; }
+
+    .rename-input {
+      font-size: 13px;
+      font-weight: 700;
+      color: #0a66c2;
+      border: none;
+      border-bottom: 1.5px solid #0a66c2;
+      outline: none;
+      background: transparent;
+      width: 120px;
+      padding: 0;
+    }
+
+    .history-meta {
+      font-size: 10px;
+      color: #999;
+      text-align: right;
+    }
+
+    .history-recruiters {
+      padding: 8px 12px;
+      display: none;
+    }
+
+    .history-recruiters.open { display: block; }
+
+    .h-check { flex-shrink: 0; width: 13px; height: 13px; cursor: pointer; margin: 0; }
+
+    .history-company-actions { display: flex; gap: 6px; padding: 4px 0 2px; }
+    .history-company-actions button {
+      font-size: 10px; padding: 3px 10px; border-radius: 10px;
+      border: 1px solid #0a66c2; background: none; color: #0a66c2; cursor: pointer;
+    }
+    .history-company-actions button:hover { background: #e8f0fe; }
+
+    .history-recruiter-row {
+      font-size: 11px;
+      padding: 6px 0;
+      border-bottom: 1px solid #f0f0f0;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .history-recruiter-row:last-child { border-bottom: none; }
+
+    .h-photo {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 1px solid #e0e0e0;
+      flex-shrink: 0;
+      background: #f0f4ff;
+    }
+
+    .h-info { flex: 1; min-width: 0; }
+    .h-name  { font-weight: 600; color: #1d1d1d; display: block; }
+    .h-title { color: #888; font-size: 10px; display: block; margin-top: 1px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    .h-actions { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+    .h-link a { color: #0a66c2; text-decoration: none; font-size: 10px; white-space: nowrap; }
+    .h-link a:hover { text-decoration: underline; }
+
+    .h-delete-recruiter {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 12px;
+      padding: 2px 4px;
+      opacity: 0.45;
+      border-radius: 4px;
+    }
+
+    .h-delete-recruiter:hover { opacity: 1; background: #fdecea; }
+
+    .copy-history-btn:hover { background: #e8f0fe; }
+
+    mark.hl {
+      background: #fef08a;
+      color: inherit;
+      border-radius: 2px;
+      padding: 0 1px;
+      font-weight: inherit;
+    }
+
+    .backup-row {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+
+    #exportBackupBtn, #importBackupBtn {
+      flex: 1;
+      background: white;
+      border: 1.5px solid #ccc;
+      color: #555;
+      padding: 6px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    #exportBackupBtn:hover { border-color: #0a66c2; color: #0a66c2; background: #f0f5ff; }
+    #importBackupBtn:hover { border-color: #057642; color: #057642; background: #f0fdf4; }
+
+    /* ── Bulk panel ── */
+    #bulkPanel { padding: 12px; }
+
+    #bulkPanel p {
+      font-size: 12px;
+      color: #555;
+      margin-bottom: 8px;
+      line-height: 1.4;
+    }
+
+    #bulkTextarea {
+      width: 100%;
+      height: 130px;
+      font-size: 12px;
+      font-family: inherit;
+      border: 1.5px solid #ccc;
+      border-radius: 8px;
+      padding: 8px 10px;
+      resize: vertical;
+      outline: none;
+      color: #1d1d1d;
+    }
+
+    #bulkTextarea:focus { border-color: #0a66c2; }
+
+    .bulk-option {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 12px;
+      color: #444;
+      margin: 8px 0 10px;
+    }
+
+    .bulk-option input[type="checkbox"] { cursor: pointer; }
+
+    #bulkSearchBtn {
+      background: #0a66c2;
+      color: white;
+      border: none;
+      padding: 9px 18px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      width: 100%;
+    }
+
+    #bulkSearchBtn:hover { background: #004182; }
+    #bulkSearchBtn:disabled { background: #aaa; cursor: not-allowed; }
+
+    #bulkProgressBar {
+      height: 4px;
+      background: #ddd;
+      border-radius: 4px;
+      margin: 10px 0 6px;
+      overflow: hidden;
+      display: none;
+    }
+
+    #bulkProgressFill {
+      height: 100%;
+      background: #0a66c2;
+      border-radius: 4px;
+      transition: width 0.3s ease;
+      width: 0%;
+    }
+
+    #bulkStatus {
+      font-size: 12px;
+      color: #444;
+      margin-bottom: 10px;
+      min-height: 16px;
+    }
+
+    #bulkResults { margin-top: 6px; max-height: 380px; overflow-y: auto; }
+
+    .bulk-result-card {
+      background: white;
+      border-radius: 8px;
+      padding: 8px 12px;
+      margin-bottom: 6px;
+      border-left: 3px solid #0a66c2;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .bulk-result-card.error { border-left-color: #c0392b; }
+    .bulk-result-card.cached { border-left-color: #57c0a0; }
+
+    .bulk-result-name {
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: capitalize;
+    }
+
+    .bulk-result-count {
+      font-size: 11px;
+      color: #666;
+    }
+
+    .empty-history {
+      text-align: center;
+      color: #aaa;
+      font-size: 12px;
+      padding: 30px 0;
+    }
+
+    .delete-entry-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 13px;
+      padding: 2px 4px;
+      margin-left: 6px;
+      opacity: 0.5;
+      border-radius: 4px;
+      flex-shrink: 0;
+    }
+
+    .delete-entry-btn:hover {
+      opacity: 1;
+      background: #fdecea;
+    }
+    /* Per-card copy link button */
+    .card-copy-btn {
+      display: inline-block;
+      margin-top: 5px;
+      background: none;
+      border: 1px solid #0a66c2;
+      color: #0a66c2;
+      padding: 2px 10px;
+      border-radius: 10px;
+      font-size: 10px;
+      cursor: pointer;
+    }
+
+    .card-copy-btn:hover { background: #e8f0fe; }
+
+    .card-remove-btn {
+      display: inline-block;
+      margin-top: 5px;
+      margin-left: 5px;
+      background: none;
+      border: 1px solid #c0392b;
+      color: #c0392b;
+      padding: 2px 10px;
+      border-radius: 10px;
+      font-size: 10px;
+      cursor: pointer;
+    }
+
+    .card-remove-btn:hover { background: #fdecea; }
+
+    /* Per-recruiter copy link in history */
+    .h-copy-link {
+      background: none;
+      border: none;
+      color: #0a66c2;
+      font-size: 10px;
+      cursor: pointer;
+      padding: 0 4px;
+      opacity: 0.6;
+      white-space: nowrap;
+    }
+
+    .h-copy-link:hover { opacity: 1; text-decoration: underline; }
+    #exportCsvBtn {
+      background: #057642;
+      color: white;
+      border: none;
+      padding: 7px 18px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      width: 100%;
+      margin-bottom: 10px;
+    }
+
+    #exportCsvBtn:hover { background: #045e34; }
+
+    /* ── Results company banner (inline with scan btn) ── */
+    #resultsCompanyBanner {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex: 1;
+      overflow: hidden;
+      background: white;
+      border-radius: 20px;
+      padding: 4px 10px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    #resultsCompanyBanner .rcb-logo {
+      width: 22px;
+      height: 22px;
+      border-radius: 5px;
+      object-fit: contain;
+      border: 1px solid #e0e0e0;
+      flex-shrink: 0;
+      background: white;
+    }
+
+    #resultsCompanyBanner .rcb-logo-fallback {
+      width: 22px;
+      height: 22px;
+      border-radius: 5px;
+      background: #e8f0fe;
+      color: #0a66c2;
+      font-size: 11px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    #resultsCompanyBanner .rcb-name {
+      font-size: 12px;
+      font-weight: 700;
+      color: #1d1d1d;
+      text-transform: capitalize;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    #resultsCompanyBanner .rcb-count {
+      font-size: 11px;
+      color: #888;
+      white-space: nowrap;
+    }
+
+    #resultsCompanyBanner .rcb-emp {
+      font-size: 10px;
+      color: #888;
+      white-space: nowrap;
+      background: #f0f0f0;
+      border-radius: 8px;
+      padding: 2px 7px;
+    }
+
+    /* ── Add Recruiter Modal ── */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.45);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-overlay.open { display: flex; }
+
+    .modal {
+      background: white;
+      border-radius: 12px;
+      padding: 18px 16px 14px;
+      width: calc(100% - 32px);
+      max-width: 380px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+    }
+
+    .modal h2 {
+      font-size: 13px;
+      font-weight: 700;
+      color: #1d1d1d;
+      margin-bottom: 12px;
+    }
+
+    .modal-field {
+      margin-bottom: 9px;
+    }
+
+    .modal-field label {
+      display: block;
+      font-size: 10.5px;
+      font-weight: 600;
+      color: #555;
+      margin-bottom: 3px;
+    }
+
+    .modal-field input {
+      width: 100%;
+      padding: 6px 9px;
+      font-size: 12px;
+      border: 1.5px solid #ccc;
+      border-radius: 6px;
+      outline: none;
+      font-family: inherit;
+    }
+
+    .modal-field input:focus { border-color: #0a66c2; }
+
+    .modal-actions {
+      display: flex;
+      gap: 7px;
+      margin-top: 13px;
+    }
+
+    #modalSaveBtn {
+      flex: 1;
+      background: #0a66c2;
+      color: white;
+      border: none;
+      padding: 8px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    #modalSaveBtn:hover { background: #004182; }
+
+    #modalCancelBtn {
+      flex: 1;
+      background: white;
+      color: #666;
+      border: 1.5px solid #ccc;
+      padding: 8px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    #modalCancelBtn:hover { background: #f5f5f5; }
+
+    #addRecruiterBtn {
+      background: white;
+      color: #0a66c2;
+      border: 1.5px solid #0a66c2;
+      padding: 5px 14px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-bottom: 10px;
+    }
+
+    #addRecruiterBtn:hover { background: #e8f0fe; }
+
+    /* ── Option B: Observer notification banner ── */
+    #observerNotification {
+      display: none;
+      align-items: center;
+      gap: 7px;
+      background: #ecfdf5;
+      border: 1.5px solid #6ee7b7;
+      border-radius: 8px;
+      padding: 7px 10px;
+      margin-bottom: 8px;
+      font-size: 11px;
+      color: #065f46;
+    }
+    #observerNotification.visible { display: flex; }
+    #obsText { flex: 1; font-weight: 600; }
+    #obsShowBtn {
+      background: #057642; color: white; border: none;
+      padding: 4px 10px; border-radius: 12px; font-size: 11px;
+      font-weight: 600; cursor: pointer; white-space: nowrap; flex-shrink: 0;
+    }
+    #obsShowBtn:hover { background: #045e34; }
+    #obsDismissBtn {
+      background: none; border: none; cursor: pointer;
+      font-size: 13px; color: #6b7280; padding: 0 2px; flex-shrink: 0;
+    }
+    #obsDismissBtn:hover { color: #111; }
+
+    /* ── Observer recruiter picker modal ── */
+    #observerModal .modal { max-height: 80vh; display: flex; flex-direction: column; }
+    #observerModal .obs-modal-list {
+      overflow-y: auto; flex: 1; margin: 8px 0;
+      border: 1px solid #eee; border-radius: 6px;
+    }
+    .obs-row {
+      display: flex; align-items: center; gap: 8px;
+      padding: 7px 10px; border-bottom: 1px solid #f3f3f3; font-size: 11px;
+    }
+    .obs-row:last-child { border-bottom: none; }
+    .obs-row input[type="checkbox"] { flex-shrink: 0; cursor: pointer; }
+    .obs-row-info { flex: 1; min-width: 0; }
+    .obs-row-name { font-weight: 700; color: #1d1d1d; }
+    .obs-row-title { color: #888; font-size: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .obs-modal-sel-row {
+      display: flex; align-items: center; gap: 6px;
+      padding: 4px 0 6px; font-size: 10.5px; color: #555;
+    }
+    .obs-modal-sel-row a { color: #0a66c2; cursor: pointer; text-decoration: none; }
+    .obs-modal-sel-row a:hover { text-decoration: underline; }
+    .obs-modal-sel-row span { flex: 1; }
+    #obsModalAddBtn {
+      background: #057642; color: white; border: none;
+      padding: 8px; border-radius: 20px; font-size: 12px;
+      font-weight: 600; cursor: pointer; flex: 1;
+    }
+    #obsModalAddBtn:hover { background: #045e34; }
+    #obsModalCloseBtn {
+      flex: 1; background: white; color: #666;
+      border: 1.5px solid #ccc; padding: 8px; border-radius: 20px;
+      font-size: 12px; font-weight: 600; cursor: pointer;
+    }
+    #obsModalCloseBtn:hover { background: #f5f5f5; }
+
+    /* ── External page company disambiguation picker ── */
+    #disambigPanel { display: none; margin-top: 10px; }
+
+    .disambig-card {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: white;
+      border-radius: 8px;
+      padding: 9px 12px;
+      margin-bottom: 6px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.07);
+      border: 1.5px solid transparent;
+      transition: border-color 0.15s;
+    }
+
+    .disambig-card:hover { border-color: #0a66c2; }
+
+    .disambig-logo {
+      width: 36px; height: 36px;
+      border-radius: 5px;
+      object-fit: contain;
+      border: 1px solid #e0e0e0;
+      flex-shrink: 0;
+      background: white;
+    }
+
+    .disambig-logo-fallback {
+      width: 36px; height: 36px;
+      border-radius: 5px;
+      background: #e8f0fe;
+      color: #0a66c2;
+      font-size: 11px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .disambig-info { flex: 1; min-width: 0; }
+
+    .disambig-name {
+      font-size: 13px; font-weight: 700; color: #1d1d1d;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+
+    .disambig-sub {
+      font-size: 10.5px; color: #666; margin-top: 1px;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+
+    .disambig-sec { font-size: 10px; color: #999; margin-top: 1px; }
+
+    .disambig-pick-btn {
+      background: #0a66c2; color: white; border: none;
+      padding: 5px 12px; border-radius: 14px;
+      font-size: 11px; font-weight: 600; cursor: pointer; flex-shrink: 0;
+    }
+
+    .disambig-pick-btn:hover { background: #004182; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🔍 LinkedIn Recruiter Finder</h1>
+    <div class="company" id="companyName"></div>
+  </header>
+
+  <!-- Tab bar -->
+  <div class="tab-bar">
+    <button class="tab-btn active" id="tabSearch">🔍 Search</button>
+    <button class="tab-btn" id="tabBulk">📋 Bulk</button>
+    <button class="tab-btn" id="tabHistory">🕓 History</button>
+  </div>
+
+  <!-- Search panel -->
+  <div class="panel active" id="searchPanel">
+    <div id="main">
+      <div id="statusBox">Click "Find Recruiters" from any LinkedIn job posting.</div>
+      <div id="companyMeta" style="display:none"></div>
+      <div id="techStack" style="display:none"></div>
+      <div id="progressBar"><div id="progressFill"></div></div>
+      <div class="keywords-row">
+        <span class="kw-chip">technical</span>
+        <span class="kw-chip">recruiter</span>
+        <span class="kw-chip">talent</span>
+        <span class="kw-chip">hiring</span>
+        <span class="kw-chip">coordinator</span>
+      </div>
+      <div class="auto-scan-row">
+        <span class="auto-scan-label">
+          ⚡ Auto-scan as I browse
+          <span class="as-status off" id="asStatus">OFF</span>
+        </span>
+        <label class="toggle-switch" title="Automatically scan each company as you click jobs">
+          <input type="checkbox" id="autoScanToggle" />
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+      <div id="queuePanel"></div>
+      <div id="observerNotification">
+        <span id="obsText"></span>
+        <button id="obsShowBtn">👁 Show</button>
+        <button id="obsDismissBtn" title="Dismiss">✕</button>
+      </div>
+      <div id="disambigPanel"></div>
+      <div class="scan-info-row">
+        <button id="scanBtn">🚀 Find Recruiters</button>
+        <div id="resultsCompanyBanner" style="display:none"></div>
+      </div>
+      <div class="results-search-wrap" id="resultsSearchWrap" style="display:none">
+        <input type="text" id="resultsSearch" placeholder="🔍 Filter recruiters..." />
+        <button id="clearResultsSearch" title="Clear filter" style="display:none">✕</button>
+      </div>
+      <!-- <button id="copyBtn">📋 Copy All as Text</button> -->
+      <div id="error"></div>
+      <div id="results"></div>
+    </div>
+  </div>
+
+  <!-- Bulk panel -->
+  <div class="panel" id="bulkPanel">
+    <p>Enter company names — one per line or comma separated. Each will be scanned in sequence.</p>
+    <textarea id="bulkTextarea" placeholder="Google&#10;Stripe&#10;Anthropic&#10;OpenAI, Meta"></textarea>
+    <div class="bulk-option">
+      <input type="checkbox" id="bulkForceRescan" />
+      <label for="bulkForceRescan">Force re-scan (ignore cache for all)</label>
+    </div>
+    <button id="bulkSearchBtn">🚀 Search All Companies</button>
+    <div id="bulkProgressBar"><div id="bulkProgressFill"></div></div>
+    <div id="bulkStatus"></div>
+    <div id="bulkResults"></div>
+  </div>
+
+  <!-- Add Recruiter Modal -->
+  <div class="modal-overlay" id="addRecruiterModal">
+    <div class="modal">
+      <h2>➕ Add Recruiter Manually</h2>
+      <div class="modal-field">
+        <label>Name *</label>
+        <input type="text" id="mName" placeholder="Jane Smith" />
+      </div>
+      <div class="modal-field">
+        <label>Title</label>
+        <input type="text" id="mTitle" placeholder="Technical Recruiter" />
+      </div>
+      <div class="modal-field">
+        <label>LinkedIn Profile URL *</label>
+        <input type="url" id="mUrl" placeholder="https://www.linkedin.com/in/..." />
+      </div>
+      <div class="modal-field">
+        <label>Company Name *</label>
+        <input type="text" id="mCompany" placeholder="Google" />
+      </div>
+      <div class="modal-field">
+        <label>Company LinkedIn URL <span style="font-weight:400;color:#999">(optional — helps match existing entries)</span></label>
+        <input type="url" id="mCompanyUrl" placeholder="https://www.linkedin.com/company/google/" />
+      </div>
+      <div id="modalError" style="color:#c0392b;font-size:11px;min-height:14px;margin-top:4px"></div>
+      <div class="modal-actions">
+        <button id="modalCancelBtn">Cancel</button>
+        <button id="modalSaveBtn">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Observer Recruiter Picker Modal -->
+  <div class="modal-overlay" id="observerModal">
+    <div class="modal">
+      <h2 id="obsModalTitle">👤 New Recruiters Spotted</h2>
+      <div class="obs-modal-sel-row">
+        <a id="obsSelectAll">Select all</a>&nbsp;·&nbsp;<a id="obsDeselectAll">Deselect all</a>
+        <span></span>
+      </div>
+      <div class="obs-modal-list" id="obsModalList"></div>
+      <div class="modal-actions">
+        <button id="obsModalCloseBtn">Close</button>
+        <button id="obsModalAddBtn">➕ Add Selected (<span id="obsModalSelCount">0</span>)</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- History panel -->
+  <div class="panel" id="historyPanel">
+    <div class="history-search-wrap">
+      <input type="text" id="historySearch" placeholder="🔍 Search company or recruiter name..." />
+      <button id="clearSearchBtn" title="Clear search">✕</button>
+    </div>
+    <div id="historyStats"></div>
+    <div style="display:flex;gap:6px;margin-bottom:8px">
+      <button id="addRecruiterBtn" style="flex:1">➕ Add Recruiter</button>
+      <button id="refreshLogosBtn" style="flex:1;background:white;border:1.5px solid #ccc;color:#555;padding:5px 10px;border-radius:20px;font-size:11px;font-weight:600;cursor:pointer" title="Fetch missing company logos">🖼 Refresh Logos</button>
+    </div>
+    <button id="exportCsvBtn">⬇️ Export to CSV</button>
+    <div class="backup-row">
+      <button id="exportBackupBtn">⬇ Export Backup</button>
+      <button id="importBackupBtn">⬆ Import Backup</button>
+      <input type="file" id="importFileInput" accept=".json" style="display:none" />
+    </div>
+    <button id="clearHistoryBtn">🗑 Clear All</button>
+    <div id="historyList"></div>
+    <div class="history-selection-bar" id="historySelectionBar">
+      <span id="histSelCount">0 selected</span>
+      <button id="histCopySelected">📋 Copy Links</button>
+      <button id="histOpenSelected">↗ Open Tabs</button>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
