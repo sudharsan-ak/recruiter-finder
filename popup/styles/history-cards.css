@@ -1,0 +1,272 @@
+.history-company {
+  background: white;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.07);
+  overflow: hidden;
+}
+
+.history-company-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 9px 12px;
+  cursor: pointer;
+  background: #f9f9f9;
+  border-bottom: 1px solid #eee;
+}
+
+.history-company-header:hover { background: #f0f4ff; }
+
+#historyStats {
+  font-size: 11px;
+  color: #888;
+  padding: 4px 2px 8px;
+  display: none;
+}
+
+.company-logo {
+  width: 26px;
+  height: 26px;
+  border-radius: 4px;
+  object-fit: contain;
+  border: 1px solid #e0e0e0;
+  flex-shrink: 0;
+  background: white;
+}
+
+.company-logo-fallback {
+  width: 26px;
+  height: 26px;
+  border-radius: 4px;
+  background: #e8f0fe;
+  color: #0a66c2;
+  font-size: 10px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.history-company-name-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+}
+
+.history-company-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: #0a66c2;
+  text-transform: capitalize;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.history-emp-count {
+  font-size: 10px;
+  color: #aaa;
+  font-weight: 400;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.rename-company-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 11px;
+  padding: 1px 3px;
+  opacity: 0.35;
+  flex-shrink: 0;
+  border-radius: 3px;
+}
+
+.rename-company-btn:hover { opacity: 1; background: #e8f0fe; }
+
+.rename-input {
+  font-size: 13px;
+  font-weight: 700;
+  color: #0a66c2;
+  border: none;
+  border-bottom: 1.5px solid #0a66c2;
+  outline: none;
+  background: transparent;
+  width: 120px;
+  padding: 0;
+}
+.history-aliases-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px 6px;
+  border-bottom: 1px solid #f0f0f0;
+}
+.aliases-label {
+  font-size: 10px;
+  color: #999;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  margin-right: 2px;
+}
+.alias-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 10px;
+  background: #eef4ff;
+  color: #0a66c2;
+  border: 1px solid #c8dcf8;
+  border-radius: 10px;
+  padding: 1px 6px 1px 7px;
+}
+.alias-chip .remove-alias-btn {
+  background: none;
+  border: none;
+  color: #999;
+  cursor: pointer;
+  font-size: 11px;
+  padding: 0 0 0 2px;
+  line-height: 1;
+}
+.alias-chip .remove-alias-btn:hover { color: #c0392b; }
+.add-alias-btn {
+  background: none;
+  border: 1px dashed #ccc;
+  color: #aaa;
+  border-radius: 10px;
+  font-size: 11px;
+  padding: 1px 6px;
+  cursor: pointer;
+  line-height: 1.4;
+}
+.add-alias-btn:hover { border-color: #0a66c2; color: #0a66c2; }
+.alias-input {
+  font-size: 11px;
+  border: none;
+  border-bottom: 1px solid #0a66c2;
+  outline: none;
+  background: transparent;
+  color: #0a66c2;
+  width: 90px;
+  padding: 0 2px;
+}
+
+.history-meta {
+  font-size: 10px;
+  color: #999;
+  text-align: right;
+}
+
+.history-recruiters {
+  padding: 8px 12px;
+  display: none;
+}
+
+.history-recruiters.open { display: block; }
+
+.h-check { flex-shrink: 0; width: 13px; height: 13px; cursor: pointer; margin: 0; }
+
+.history-company-actions { display: flex; gap: 6px; padding: 4px 0 2px; }
+.history-company-actions button {
+  font-size: 10px; padding: 3px 10px; border-radius: 10px;
+  border: 1px solid #0a66c2; background: none; color: #0a66c2; cursor: pointer;
+}
+.history-company-actions button:hover { background: #e8f0fe; }
+
+.history-recruiter-row {
+  font-size: 11px;
+  padding: 6px 0;
+  border-bottom: 1px solid #f0f0f0;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.history-recruiter-row:last-child { border-bottom: none; }
+
+.h-photo {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid #e0e0e0;
+  flex-shrink: 0;
+  background: #f0f4ff;
+}
+
+.h-info { flex: 1; min-width: 0; }
+.h-name  { font-weight: 600; color: #1d1d1d; display: block; }
+.h-title { color: #888; font-size: 10px; display: block; margin-top: 1px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.h-actions { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+.h-link a { color: #0a66c2; text-decoration: none; font-size: 10px; white-space: nowrap; }
+.h-link a:hover { text-decoration: underline; }
+
+.h-delete-recruiter {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 12px;
+  padding: 2px 4px;
+  opacity: 0.45;
+  border-radius: 4px;
+}
+
+.h-delete-recruiter:hover { opacity: 1; background: #fdecea; }
+
+.copy-history-btn:hover { background: #e8f0fe; }
+
+mark.hl {
+  background: #fef08a;
+  color: inherit;
+  border-radius: 2px;
+  padding: 0 1px;
+  font-weight: inherit;
+}
+
+.backup-row {
+
+/* History empty state and actions */
+  text-align: center;
+  color: #aaa;
+  font-size: 12px;
+  padding: 30px 0;
+}
+
+.delete-entry-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+  padding: 2px 4px;
+  margin-left: 6px;
+  opacity: 0.5;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.delete-entry-btn:hover {
+  opacity: 1;
+  background: #fdecea;
+}
+
+/* Per-recruiter copy link in history */
+.h-copy-link {
+  background: none;
+  border: none;
+  color: #0a66c2;
+  font-size: 10px;
+  cursor: pointer;
+  padding: 0 4px;
+  opacity: 0.6;
+  white-space: nowrap;
+}
+
+.h-copy-link:hover { opacity: 1; text-decoration: underline; }
