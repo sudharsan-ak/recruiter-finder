@@ -19,7 +19,13 @@ function requestProfileCheck(tabId, withReconnect = false) {
     try {
       await chrome.scripting.executeScript({
         target: { tabId },
-        files: ['aliases.js', 'content/content-core.js', 'content/profile-content.js']
+        files: [
+          'aliases.js',
+          'content/content-core.js',
+          'content/profile/dom-readers.js',
+          'content/profile/company-resolver.js',
+          'content/profile-content.js'
+        ]
       });
       setTimeout(() => chrome.tabs.sendMessage(tabId, { action: 'requestProfileState' }).catch(() => {}), 400);
     } catch {

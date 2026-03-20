@@ -43,7 +43,13 @@
 
   "content_scripts": [{
     "matches": ["https://www.linkedin.com/*"],
-    "js": ["aliases.js", "content/content-core.js", "content/profile-content.js"],
+    "js": [
+      "aliases.js",
+      "content/content-core.js",
+      "content/profile/dom-readers.js",
+      "content/profile/company-resolver.js",
+      "content/profile-content.js"
+    ],
     "run_at": "document_idle"
   }]
 }
