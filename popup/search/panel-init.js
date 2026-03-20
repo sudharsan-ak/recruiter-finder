@@ -67,6 +67,15 @@ async function initPanel() {
   resetProfileUiState();
 
   if (!url.includes('linkedin.com')) {
+    let host = '';
+    try { host = new URL(url).hostname; } catch (e) {}
+    if (host === 'mail.google.com') {
+      currentSlug = null;
+      companyEl.textContent = '';
+      resetSearchCompanyState();
+      statusBox.textContent = 'Ready! Open a LinkedIn page or supported job posting to use the extension.';
+      return;
+    }
     handleExternalPage(tab);
     return;
   }
