@@ -34,7 +34,7 @@
       white-space: nowrap;
     }
 
-    /* ── Tab bar ── */
+    /* -Tab bar -*/
     .tab-bar {
       display: flex;
       background: white;
@@ -62,7 +62,7 @@
 
     .tab-btn:hover:not(.active) { color: #333; }
 
-    /* ── Panels ── */
+    /* -Panels -*/
     .panel { display: none; }
     .panel.active { display: block; }
 
@@ -137,7 +137,7 @@
     }
     #clearResultsSearch:hover { color: #333; }
 
-    /* ── Auto-scan toggle ── */
+    /* -Auto-scan toggle -*/
     .auto-scan-row {
       display: flex;
       align-items: center;
@@ -190,7 +190,7 @@
     .toggle-switch input:checked + .toggle-slider { background: #0a66c2; }
     .toggle-switch input:checked + .toggle-slider:before { transform: translateX(16px); }
 
-    /* ── Queue panel ── */
+    /* -Queue panel -*/
     #queuePanel {
       margin-bottom: 8px;
     }
@@ -430,6 +430,14 @@
     .meta-visa-no  { color: #c0392b; }
     .meta-visa-na  { color: #aaa; font-weight: 400; }
 
+    .emp-count-chip { cursor: pointer; }
+    .emp-count-chip:hover { text-decoration: underline; }
+    .emp-count-input {
+      width: 110px; font-size: 11px; font-family: inherit;
+      border: 1px solid #0a66c2; border-radius: 4px; padding: 0 5px;
+      outline: none; color: inherit;
+    }
+
     .copy-jd-chip {
       background: none;
       border: 1px solid #ccc;
@@ -471,7 +479,7 @@
 
     #error { color: #c0392b; font-size: 12px; margin-top: 8px; display: none; }
 
-    /* ── History panel ── */
+    /* -History panel -*/
     #historyPanel { padding: 12px; }
 
     #historySearch {
@@ -507,22 +515,149 @@
 
     .history-search-wrap #historySearch { margin-bottom: 0; padding-right: 28px; }
 
+    .history-toolbar {
+      margin-bottom: 8px;
+    }
+
+    .history-toolbar #historyStats {
+      margin: 0;
+      padding: 0 2px;
+    }
+
+    .history-actions-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .history-actions-row-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+      flex: 1;
+    }
+
+    #historyActionStatus {
+      font-size: 11px;
+      color: #888;
+      min-width: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    #historySort {
+      flex-shrink: 0;
+      background: white;
+      border: 1.5px solid #ccc;
+      color: #555;
+      padding: 5px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      max-width: 130px;
+    }
+
+    #historySort:focus { outline: none; border-color: #0a66c2; }
+
+    #historyOptionsBtn,
     #clearHistoryBtn {
       background: white;
-      color: #c0392b;
-      border: 1.5px solid #c0392b;
+      color: #555;
+      border: 1.5px solid #ccc;
       padding: 5px 14px;
       border-radius: 20px;
       font-size: 11px;
       font-weight: 600;
       cursor: pointer;
-      margin-bottom: 10px;
-      float: right;
     }
 
+    #historyOptionsBtn:hover { background: #f5f7fb; border-color: #0a66c2; color: #0a66c2; }
+    #clearHistoryBtn {
+      color: #c0392b;
+      border-color: #c0392b;
+    }
     #clearHistoryBtn:hover { background: #fdecea; }
 
     #historyList { max-height: 420px; overflow-y: auto; clear: both; }
+
+    .history-options-wrap {
+      position: relative;
+      flex-shrink: 0;
+    }
+
+    .history-options-menu {
+      display: none;
+      position: absolute;
+      right: 0;
+      top: calc(100% + 6px);
+      width: 220px;
+      background: white;
+      border: 1px solid #e6e6e6;
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+      padding: 8px;
+      z-index: 30;
+    }
+
+    .history-options-menu.open { display: block; }
+
+    .history-options-menu button {
+      width: 100%;
+      margin: 0 0 6px;
+    }
+
+    .history-options-menu .backup-row {
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    .history-options-menu .backup-row button {
+      margin: 0 0 6px;
+    }
+
+    .history-options-menu #clearHistoryBtn {
+      margin: 0;
+    }
+
+    .history-options-menu #addRecruiterBtn,
+    .history-options-menu #refreshLogosBtn,
+    .history-options-menu #updateSlugsBtn,
+    .history-options-menu #exportCsvBtn,
+    .history-options-menu #exportBackupBtn,
+    .history-options-menu #importBackupBtn {
+      background: white;
+      border: 1.5px solid #0a66c2;
+      color: #0a66c2;
+      padding: 7px 16px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .history-options-menu #addRecruiterBtn:hover,
+    .history-options-menu #refreshLogosBtn:hover,
+    .history-options-menu #updateSlugsBtn:hover,
+    .history-options-menu #exportCsvBtn:hover,
+    .history-options-menu #exportBackupBtn:hover,
+    .history-options-menu #importBackupBtn:hover {
+      background: #e8f0fe;
+    }
+
+    .history-options-menu #clearHistoryBtn {
+      background: white;
+      color: #c0392b;
+      border: 1.5px solid #c0392b;
+    }
+
+    .history-options-menu #clearHistoryBtn:hover {
+      background: #fdecea;
+    }
 
     .history-selection-bar {
       display: none;
@@ -643,6 +778,64 @@
       width: 120px;
       padding: 0;
     }
+    .history-aliases-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 8px 6px;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .aliases-label {
+      font-size: 10px;
+      color: #999;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      margin-right: 2px;
+    }
+    .alias-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+      font-size: 10px;
+      background: #eef4ff;
+      color: #0a66c2;
+      border: 1px solid #c8dcf8;
+      border-radius: 10px;
+      padding: 1px 6px 1px 7px;
+    }
+    .alias-chip .remove-alias-btn {
+      background: none;
+      border: none;
+      color: #999;
+      cursor: pointer;
+      font-size: 11px;
+      padding: 0 0 0 2px;
+      line-height: 1;
+    }
+    .alias-chip .remove-alias-btn:hover { color: #c0392b; }
+    .add-alias-btn {
+      background: none;
+      border: 1px dashed #ccc;
+      color: #aaa;
+      border-radius: 10px;
+      font-size: 11px;
+      padding: 1px 6px;
+      cursor: pointer;
+      line-height: 1.4;
+    }
+    .add-alias-btn:hover { border-color: #0a66c2; color: #0a66c2; }
+    .alias-input {
+      font-size: 11px;
+      border: none;
+      border-bottom: 1px solid #0a66c2;
+      outline: none;
+      background: transparent;
+      color: #0a66c2;
+      width: 90px;
+      padding: 0 2px;
+    }
 
     .history-meta {
       font-size: 10px;
@@ -738,7 +931,7 @@
     #exportBackupBtn:hover { border-color: #0a66c2; color: #0a66c2; background: #f0f5ff; }
     #importBackupBtn:hover { border-color: #057642; color: #057642; background: #f0fdf4; }
 
-    /* ── Bulk panel ── */
+    /* -Bulk panel -*/
     #bulkPanel { padding: 12px; }
 
     #bulkPanel p {
@@ -922,7 +1115,7 @@
 
     #exportCsvBtn:hover { background: #045e34; }
 
-    /* ── Results company banner (inline with scan btn) ── */
+    /* -Results company banner (inline with scan btn) -*/
     #resultsCompanyBanner {
       display: flex;
       align-items: center;
@@ -984,7 +1177,7 @@
       padding: 2px 7px;
     }
 
-    /* ── Add Recruiter Modal ── */
+    /* -Add Recruiter Modal -*/
     .modal-overlay {
       display: none;
       position: fixed;
@@ -1085,7 +1278,7 @@
 
     #addRecruiterBtn:hover { background: #e8f0fe; }
 
-    /* ── Option B: Observer notification banner ── */
+    /* -Option B: Observer notification banner -*/
     #observerNotification {
       display: none;
       align-items: center;
@@ -1112,7 +1305,34 @@
     }
     #obsDismissBtn:hover { color: #111; }
 
-    /* ── Observer recruiter picker modal ── */
+    /* -Profile page recruiter notification -*/
+    #profileNotif {
+      display: none;
+      align-items: center;
+      gap: 7px;
+      background: #eff6ff;
+      border: 1.5px solid #93c5fd;
+      border-radius: 8px;
+      padding: 7px 10px;
+      margin-bottom: 8px;
+      font-size: 11px;
+      color: #1e40af;
+    }
+    #profileNotif.visible { display: flex; }
+    #profileNotifText { flex: 1; font-weight: 600; line-height: 1.3; }
+    #profileNotifAddBtn {
+      background: #0a66c2; color: white; border: none;
+      padding: 4px 10px; border-radius: 12px; font-size: 10px;
+      font-weight: 600; cursor: pointer; white-space: nowrap; flex-shrink: 0;
+    }
+    #profileNotifAddBtn:hover { background: #004182; }
+    #profileNotifDismiss {
+      background: none; border: none; cursor: pointer;
+      font-size: 13px; color: #6b7280; padding: 0 2px; flex-shrink: 0;
+    }
+    #profileNotifDismiss:hover { color: #111; }
+
+    /* -Observer recruiter picker modal -*/
     #observerModal .modal { max-height: 80vh; display: flex; flex-direction: column; }
     #observerModal .obs-modal-list {
       overflow-y: auto; flex: 1; margin: 8px 0;
@@ -1147,7 +1367,7 @@
     }
     #obsModalCloseBtn:hover { background: #f5f5f5; }
 
-    /* ── External page company disambiguation picker ── */
+    /* -External page company disambiguation picker -*/
     #disambigPanel { display: none; margin-top: 10px; }
 
     .disambig-card {
@@ -1211,6 +1431,10 @@
   <header>
     <h1>🔍 LinkedIn Recruiter Finder</h1>
     <div class="company" id="companyName"></div>
+    <button id="refreshPanelBtn" title="Refresh panel" style="
+      background:none; border:none; color:white; opacity:0.8; cursor:pointer;
+      font-size:15px; padding:2px 4px; margin-left:6px; line-height:1;
+    ">↻</button>
   </header>
 
   <!-- Tab bar -->
@@ -1245,6 +1469,11 @@
         </label>
       </div>
       <div id="queuePanel"></div>
+      <div id="profileNotif">
+        <span id="profileNotifText"></span>
+        <button id="profileNotifAddBtn"></button>
+        <button id="profileNotifDismiss" title="Dismiss">✕</button>
+      </div>
       <div id="observerNotification">
         <span id="obsText"></span>
         <button id="obsShowBtn">👁 Show</button>
@@ -1333,20 +1562,38 @@
       <input type="text" id="historySearch" placeholder="🔍 Search company or recruiter name..." />
       <button id="clearSearchBtn" title="Clear search">✕</button>
     </div>
-    <div id="historyStats"></div>
-    <div style="display:flex;gap:6px;margin-bottom:8px">
-      <button id="addRecruiterBtn" style="flex:1">➕ Add Recruiter</button>
-      <button id="refreshLogosBtn" style="flex:1;background:white;border:1.5px solid #ccc;color:#555;padding:5px 10px;border-radius:20px;font-size:11px;font-weight:600;cursor:pointer" title="Fetch missing company logos">🖼 Refresh Logos</button>
+    <div class="history-toolbar">
+      <div id="historyStats"></div>
     </div>
-    <button id="exportCsvBtn">⬇️ Export to CSV</button>
-    <div class="backup-row">
-      <button id="exportBackupBtn">⬇ Export Backup</button>
-      <button id="importBackupBtn">⬆ Import Backup</button>
-      <input type="file" id="importFileInput" accept=".json" style="display:none" />
+    <div class="history-actions-row">
+      <div class="history-actions-row-left">
+        <select id="historySort" title="Sort companies">
+          <option value="latest">Latest</option>
+          <option value="oldest">Oldest</option>
+          <option value="az">A-Z</option>
+          <option value="za">Z-A</option>
+        </select>
+        <div id="historyActionStatus"></div>
+      </div>
+      <div class="history-options-wrap">
+        <button id="historyOptionsBtn">≡ Options</button>
+        <div class="history-options-menu" id="historyOptionsMenu">
+          <button id="addRecruiterBtn">➕ Add Recruiter</button>
+          <button id="refreshLogosBtn" title="Fetch missing company logos">🖼 Refresh Logos</button>
+          <button id="updateSlugsBtn" title="Fetch canonical slug for every company and store aliases">🔗 Update Slugs</button>
+          <button id="exportCsvBtn">⬇️ Export to CSV</button>
+          <div class="backup-row">
+            <button id="exportBackupBtn">⬇ Export Backup</button>
+            <button id="importBackupBtn">⬆ Import Backup</button>
+            <input type="file" id="importFileInput" accept=".json" style="display:none" />
+          </div>
+          <button id="clearHistoryBtn">🗑 Clear All</button>
+        </div>
+      </div>
     </div>
-    <button id="clearHistoryBtn">🗑 Clear All</button>
     <div id="historyList"></div>
-    <div class="history-selection-bar" id="historySelectionBar">
+
+<div class="history-selection-bar" id="historySelectionBar">
       <span id="histSelCount">0 selected</span>
       <button id="histCopySelected">📋 Copy Links</button>
       <button id="histOpenSelected">↗ Open Tabs</button>
@@ -1354,5 +1601,16 @@
   </div>
 
   <script src="popup.js"></script>
+  <script src="cache/cache.js"></script>
+  <script src="cache/cache-normalize.js"></script>
+  <script src="meta/meta.js"></script>
+  <script src="storage/slugs.js"></script>
+  <script src="storage/export.js"></script>
+  <script src="notifications/notifications.js"></script>
+  <script src="history/history-tools.js"></script>
+  <script src="history/history-render.js"></script>
+  <script src="bulk/bulk.js"></script>
+  <script src="scanner/scanner.js"></script>
+  <script src="init.js"></script>
 </body>
 </html>

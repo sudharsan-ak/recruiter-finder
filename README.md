@@ -107,12 +107,25 @@ Displays below the scan button for the current job:
 ## File Structure
 
 ```
-â”œâ”€â”€ manifest.json       # MV3 manifest â€” permissions, content scripts, side panel
-â”œâ”€â”€ background.js       # Service worker â€” scraper, auto-scan queue, cache helpers
-â”œâ”€â”€ content.js          # Content script â€” job change detection, People tab observer
-â”œâ”€â”€ popup.html          # Side panel UI â€” HTML + all CSS
-â”œâ”€â”€ popup.js            # Side panel logic â€” all UI interactions, state management
-â””â”€â”€ icons/              # Extension icons (16, 32, 48, 128px)
++-- manifest.json            # MV3 manifest — permissions, content scripts, side panel
++-- background.js            # Service worker — scraper, auto-scan queue
++-- aliases.js               # Manual company slug alias map
++-- content/
+¦   +-- content-core.js      # LinkedIn job/company/people content logic
+¦   +-- profile-content.js   # LinkedIn profile recruiter detection
++-- popup/
+¦   +-- popup.html           # Side panel UI — HTML + CSS
+¦   +-- popup.js             # Side panel shell/state wiring
+¦   +-- init.js
+¦   +-- cache/
+¦   +-- history/
+¦   +-- notifications/
+¦   +-- meta/
+¦   +-- bulk/
+¦   +-- scanner/
+¦   +-- storage/
++-- oldFiles/                # Legacy inactive reference files
++-- icons/                   # Extension icons (16, 32, 48, 128px)
 ```
 
 ---
@@ -160,3 +173,4 @@ Displays below the scan button for the current job:
 ## License
 
 MIT
+

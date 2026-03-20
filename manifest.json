@@ -34,7 +34,7 @@
   },
 
   "side_panel": {
-    "default_path": "popup.html"
+    "default_path": "popup/popup.html"
   },
 
   "background": {
@@ -43,7 +43,7 @@
 
   "content_scripts": [{
     "matches": ["https://www.linkedin.com/*"],
-    "js": ["content.js"],
+    "js": ["aliases.js", "content/content-core.js", "content/profile-content.js"],
     "run_at": "document_idle"
   }]
 }
