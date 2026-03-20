@@ -1,3 +1,6 @@
+import { searchLinkedInCompanies } from './company-search.js';
+import { runScraper } from './scan-runner.js';
+
 // background.js — Service worker that orchestrates everything
 
 // ── Side panel setup ──────────────────────────────────────────────────────────
@@ -91,7 +94,16 @@ async function processAutoQueue() {
     activeScans.add(slug);
     chrome.storage.session.set({ autoScanSlug: slug, autoScanQueue: [...autoQueue] }).catch(() => {});
     try {
-      const { recruiters, logoUrl } = await runScraper(slug);
+      const { recruiters, logoUrl } = await runScraper(slug, {
+        createTab,
+        waitForTabLoad,
+        sleep,
+        navigateTab,
+        scrapeTab,
+        scrapeTabWithHiringFrame,
+        isRecruiter,
+        SEARCH_QUERY,
+      });
       if (recruiters.length > 0) await saveToStoredCache(slug, recruiters, logoUrl);
       chrome.runtime.sendMessage({ action: 'scanComplete', companySlug: slug, count: recruiters.length }).catch(() => {});
     } catch (e) {}
@@ -176,7 +188,16 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
     activeScans.add(slug);
     // Track in session so popup can recover if the panel is closed mid-scan
     chrome.storage.session.set({ manualScanSlug: slug, manualScanDone: false, manualScanError: false }).catch(() => {});
-    runScraper(slug)
+    runScraper(slug, {
+      createTab,
+      waitForTabLoad,
+      sleep,
+      navigateTab,
+      scrapeTab,
+      scrapeTabWithHiringFrame,
+      isRecruiter,
+      SEARCH_QUERY,
+    })
       .then(async ({ recruiters, logoUrl }) => {
         activeScans.delete(slug);
         // Always persist to local cache so results survive panel close/reopen
@@ -200,7 +221,7 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
   }
 
   if (request.action === 'searchCompanies') {
-    searchLinkedInCompanies(request.companyName)
+    searchLinkedInCompanies(request.companyName, { createTab, waitForTabLoad, sleep })
       .then(companies => sendResponse({ success: true, companies }))
       .catch(() => sendResponse({ success: false, companies: [] }));
     return true;
@@ -273,204 +294,6 @@ async function fetchLogoForSlug(slug) {
 // ── LinkedIn company search (for non-LinkedIn job pages) ──────────────────────
 // Opens a hidden search tab, scrapes up to 7 company cards, closes tab.
 // Uses a link-based approach that is resilient to LinkedIn DOM class changes.
-
-async function searchLinkedInCompanies(companyName) {
-  const url = `https://www.linkedin.com/search/results/companies/?keywords=${encodeURIComponent(companyName)}`;
-  const tab = await createTab(url);
-  try {
-    await waitForTabLoad(tab.id);
-    await sleep(3000);
-
-    // Retry up to 3 times — LinkedIn's SPA may still be rendering
-    let results = [];
-    for (let attempt = 0; attempt < 3 && results.length === 0; attempt++) {
-      if (attempt > 0) await sleep(1500);
-      const res = await chrome.scripting.executeScript({
-        target: { tabId: tab.id },
-        func: () => {
-          const items = [];
-          const seen  = new Set();
-
-          // Walk every company link on the page — more resilient than class selectors
-          for (const link of document.querySelectorAll('a[href*="/company/"]')) {
-            if (items.length >= 7) break;
-
-            // Skip navigation / global header links
-            if (link.closest('#global-nav, header, [role="navigation"], footer')) continue;
-
-            const m = link.href.match(/linkedin\.com\/company\/([^/?#]+)/);
-            if (!m) continue;
-            const slug = m[1].toLowerCase().replace(/[/?#].*$/, '');
-            if (['linkedin', 'showcase', 'pages', 'ads', 'jobs'].includes(slug)) continue;
-            if (seen.has(slug)) continue;
-            seen.add(slug);
-
-            // Company name: prefer aria-hidden span (LinkedIn's visible-text pattern)
-            const nameSpan = link.querySelector('span[aria-hidden="true"]');
-            const rawName  = (nameSpan?.textContent || link.textContent || '').trim();
-            // Clean up duplicated text LinkedIn sometimes produces ("BrazeBraze" → "Braze")
-            const half = Math.ceil(rawName.length / 2);
-            const name = rawName.slice(0, half) === rawName.slice(half) ? rawName.slice(0, half) : rawName;
-            if (!name || name.length < 2) continue;
-
-            // Walk up to find the result card for subtitle / logo
-            const card = link.closest('li') || link.parentElement;
-            const subtitleEl = card?.querySelector(
-              '.entity-result__primary-subtitle, [class*="primary-subtitle"], [class*="subtitle--top"]'
-            );
-            const subtitle = subtitleEl?.textContent?.trim() || '';
-
-            const secEl = card?.querySelector(
-              '.entity-result__secondary-subtitle, [class*="secondary-subtitle"]'
-            );
-            const secondary = secEl?.textContent?.trim() || '';
-
-            const img = card?.querySelector('img');
-            const logoUrl = (img?.src?.includes('licdn.com') && !img.src.includes('ghost'))
-              ? img.src : null;
-
-            items.push({ slug, name, subtitle, secondary, logoUrl });
-          }
-          return items;
-        }
-      });
-      results = res[0]?.result || [];
-    }
-
-    chrome.tabs.remove(tab.id).catch(() => {});
-    return results;
-  } catch (err) {
-    chrome.tabs.remove(tab.id).catch(() => {});
-    throw err;
-  }
-}
-
-async function runScraper(companySlug) {
-  const peopleBaseUrl = `https://www.linkedin.com/company/${companySlug}/people/`;
-
-  const tab   = await createTab(peopleBaseUrl);
-  const tabId = tab.id;
-
-  try {
-    await waitForTabLoad(tabId);
-    await sleep(1500);
-
-    // ── Grab company logo from the people page header ─────────────────────────
-    // LinkedIn uses lazy-image — src may still be a placeholder on first run.
-    // We retry up to 3 times with 1s gaps to let Ember.js hydrate the src.
-    let logoUrl = null;
-    for (let attempt = 0; attempt < 3 && !logoUrl; attempt++) {
-      if (attempt > 0) await sleep(1000);
-      try {
-        const logoResult = await chrome.scripting.executeScript({
-          target: { tabId },
-          func: () => {
-            // Returns the real URL from src OR from LinkedIn's lazy-load data attributes
-            function getLicdnUrl(img) {
-              if (!img) return null;
-              if (img.closest('#global-nav, [class*="global-nav"], nav[aria-label]')) return null;
-              // Check src first
-              for (const val of [img.src, img.getAttribute('data-delayed-url'), img.getAttribute('data-src')]) {
-                if (val && val.includes('media.licdn.com') && !val.includes('ghost') && !val.includes('data:')) {
-                  return val;
-                }
-              }
-              return null;
-            }
-
-            // Priority 1: exact class confirmed via devtools
-            const url1 = getLicdnUrl(document.querySelector('img.org-top-card-primary-content__logo'));
-            if (url1) return url1;
-
-            // Priority 2: alt text ends with " logo" (e.g. "Inspira Financial logo")
-            for (const sel of [
-              '.org-top-card-primary-content__logo-container img[alt$=" logo"]',
-              '[class*="org-top-card"] img[alt$=" logo"]',
-            ]) {
-              const url2 = getLicdnUrl(document.querySelector(sel));
-              if (url2) return url2;
-            }
-
-            // Priority 3: other org-top-card class variants
-            for (const sel of [
-              'img.org-top-card__logo',
-              'img.org-top-card-summary__logo',
-              '[data-test-id="org-entity-logo"] img',
-              '.org-top-card-primary-content__logo-container img',
-            ]) {
-              const url3 = getLicdnUrl(document.querySelector(sel));
-              if (url3) return url3;
-            }
-
-            // Priority 4: JSON-LD structured data
-            for (const s of document.querySelectorAll('script[type="application/ld+json"]')) {
-              try {
-                const d = JSON.parse(s.textContent);
-                const val = d?.logo || d?.image;
-                const u = typeof val === 'string' ? val : val?.url;
-                if (u && u.includes('licdn.com')) return u;
-              } catch (e) {}
-            }
-
-            return null;
-          }
-        });
-        logoUrl = logoResult[0]?.result || null;
-      } catch (_) {}
-    }
-
-    chrome.storage.session.set({ status: 'Searching for recruiters...', progress: 1, total: 1 });
-
-    const searchUrl = `${peopleBaseUrl}?keywords=${encodeURIComponent(SEARCH_QUERY)}`;
-    await navigateTab(tabId, searchUrl);
-    await waitForTabLoad(tabId);
-    await sleep(1800);
-
-    // ── Primary scrape: title-based recruiter detection (existing logic) ──────
-    const results  = await scrapeTab(tabId);
-    const filtered = results.filter(r => isRecruiter(r.title));
-
-    // ── Fallback: #Hiring frame detection (NEW — isolated, does not affect above)
-    let hiringFrameResults = [];
-    if (filtered.length === 0) {
-      chrome.storage.session.set({ status: 'No recruiters found by title. Scanning for #Hiring badges...' });
-
-      // Navigate to unfiltered people page to get broader set of employees
-      await navigateTab(tabId, peopleBaseUrl);
-      await waitForTabLoad(tabId);
-      await sleep(1800);
-
-      const allPeople = await scrapeTabWithHiringFrame(tabId);
-      hiringFrameResults = allPeople.filter(r => r.hiringFrame);
-
-      chrome.storage.session.set({
-        status: hiringFrameResults.length > 0
-          ? `✅ Found ${hiringFrameResults.length} people with #Hiring frame.`
-          : '⚠️ No recruiters or #Hiring badges found.',
-        done: true
-      });
-    }
-
-    chrome.tabs.remove(tabId);
-
-    // ── Merge: tagged so popup can render them in separate sections ───────────
-    // Existing recruiter results keep their shape: { name, title, url }
-    // Hiring frame results are tagged:             { name, title, url, hiringFrame: true }
-    const finalResults = filtered.length > 0 ? filtered : hiringFrameResults;
-
-    chrome.storage.session.set({
-      status: `✅ Done! Found ${finalResults.length} people.`,
-      done: true,
-      results: finalResults
-    });
-
-    return { recruiters: finalResults, logoUrl };
-
-  } catch (err) {
-    chrome.tabs.remove(tabId).catch(() => {});
-    throw err;
-  }
-}
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
