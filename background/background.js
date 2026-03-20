@@ -1,9 +1,11 @@
 import { searchLinkedInCompanies } from './company-search.js';
 import { runScraper } from './scan-runner.js';
+import { fetchLogoForSlug } from './logo-fetch.js';
+import { autoScrollAndScrape, autoScrollAndScrapeWithHiringFrame } from './people-scrapers.js';
 
-// background.js — Service worker that orchestrates everything
+// background.js � Service worker that orchestrates everything
 
-// ── Side panel setup ──────────────────────────────────────────────────────────
+// -- Side panel setup ----------------------------------------------------------
 
 chrome.runtime.onInstalled.addListener(() => {
   chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(() => {});
@@ -14,7 +16,7 @@ chrome.action.onClicked.addListener(tab => {
 });
 
 
-// ── Recruiter filter patterns ─────────────────────────────────────────────────
+// -- Recruiter filter patterns -------------------------------------------------
 
 const SEARCH_QUERY = 'technical,tech,recruiter,talent,hiring,coordinator';
 
@@ -61,7 +63,7 @@ function isRecruiter(title) {
   return !excluded;
 }
 
-// ── Cache helpers ─────────────────────────────────────────────────────────────
+// -- Cache helpers -------------------------------------------------------------
 
 const CACHE_KEY = 'recruiterHistory';
 
@@ -79,7 +81,7 @@ async function saveToStoredCache(slug, recruiters, logoUrl) {
   return new Promise(r => chrome.storage.local.set({ [CACHE_KEY]: cache }, r));
 }
 
-// ── Auto-scan queue (runs even with panel closed) ─────────────────────────────
+// -- Auto-scan queue (runs even with panel closed) -----------------------------
 
 const activeScans = new Set();  // slugs currently being scanned (manual or auto)
 const autoQueue   = [];         // slugs waiting for auto-scan
@@ -120,7 +122,7 @@ function enqueueAutoScan(slug) {
   processAutoQueue();
 }
 
-// ── Watch for LinkedIn job URL changes (works with panel closed) ──────────────
+// -- Watch for LinkedIn job URL changes (works with panel closed) --------------
 
 let lastAutoUrl = '';
 
@@ -180,7 +182,7 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo) => {
   }, 1000);
 });
 
-// ── Manual scan entry point ───────────────────────────────────────────────────
+// -- Manual scan entry point ---------------------------------------------------
 
 chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
   if (request.action === 'start') {
@@ -214,7 +216,7 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
   }
 
   if (request.action === 'fetchLogo') {
-    fetchLogoForSlug(request.companySlug)
+    fetchLogoForSlug(request.companySlug, { createTab, waitForTabLoad, sleep })
       .then(logoUrl => sendResponse({ logoUrl }))
       .catch(() => sendResponse({ logoUrl: null }));
     return true;
@@ -228,74 +230,7 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
   }
 });
 
-
-// ── Logo-only fetch (for backfilling old cache entries) ───────────────────────
-
-async function fetchLogoForSlug(slug) {
-  const url = `https://www.linkedin.com/company/${slug}/`;
-  const tab = await createTab(url);
-  try {
-    await waitForTabLoad(tab.id);
-    await sleep(1500);
-    let logoUrl = null;
-    for (let attempt = 0; attempt < 3 && !logoUrl; attempt++) {
-      if (attempt > 0) await sleep(1000);
-      try {
-        const res = await chrome.scripting.executeScript({
-          target: { tabId: tab.id },
-          func: () => {
-            function getLicdnUrl(img) {
-              if (!img) return null;
-              if (img.closest('#global-nav, [class*="global-nav"], nav[aria-label]')) return null;
-              for (const val of [img.src, img.getAttribute('data-delayed-url'), img.getAttribute('data-src')]) {
-                if (val && val.includes('media.licdn.com') && !val.includes('ghost') && !val.includes('data:')) return val;
-              }
-              return null;
-            }
-            const url1 = getLicdnUrl(document.querySelector('img.org-top-card-primary-content__logo'));
-            if (url1) return url1;
-            for (const sel of [
-              '.org-top-card-primary-content__logo-container img[alt$=" logo"]',
-              '[class*="org-top-card"] img[alt$=" logo"]',
-            ]) {
-              const url2 = getLicdnUrl(document.querySelector(sel));
-              if (url2) return url2;
-            }
-            for (const sel of [
-              'img.org-top-card__logo', 'img.org-top-card-summary__logo',
-              '[data-test-id="org-entity-logo"] img',
-              '.org-top-card-primary-content__logo-container img',
-            ]) {
-              const url3 = getLicdnUrl(document.querySelector(sel));
-              if (url3) return url3;
-            }
-            for (const s of document.querySelectorAll('script[type="application/ld+json"]')) {
-              try {
-                const d = JSON.parse(s.textContent);
-                const val = d?.logo || d?.image;
-                const u = typeof val === 'string' ? val : val?.url;
-                if (u && u.includes('licdn.com')) return u;
-              } catch (e) {}
-            }
-            return null;
-          }
-        });
-        logoUrl = res[0]?.result || null;
-      } catch (_) {}
-    }
-    chrome.tabs.remove(tab.id).catch(() => {});
-    return logoUrl;
-  } catch (err) {
-    chrome.tabs.remove(tab.id).catch(() => {});
-    throw err;
-  }
-}
-
-// ── LinkedIn company search (for non-LinkedIn job pages) ──────────────────────
-// Opens a hidden search tab, scrapes up to 7 company cards, closes tab.
-// Uses a link-based approach that is resilient to LinkedIn DOM class changes.
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
+// -- Helpers -------------------------------------------------------------------
 
 function createTab(url) {
   return new Promise(resolve => chrome.tabs.create({ url, active: false }, resolve));
@@ -335,8 +270,8 @@ async function scrapeTab(tabId, maxPeople = 80) {
   return results[0]?.result || [];
 }
 
-// ── NEW: separate scrape function for #Hiring frame detection ─────────────────
-// Completely isolated — only called when filtered.length === 0
+// -- NEW: separate scrape function for #Hiring frame detection -----------------
+// Completely isolated � only called when filtered.length === 0
 async function scrapeTabWithHiringFrame(tabId) {
   const results = await chrome.scripting.executeScript({
     target: { tabId },
@@ -347,197 +282,4 @@ async function scrapeTabWithHiringFrame(tabId) {
 
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-// ── Injected scraper — existing, untouched ────────────────────────────────────
-
-function autoScrollAndScrape(maxPeople = 80) {
-  return new Promise((resolve) => {
-    let lastCount    = 0;
-    let stableRounds = 0;
-
-    function scrape() {
-      const seen = new Set();
-      const data = [];
-      document.querySelectorAll('.artdeco-entity-lockup__title a[href*="/in/"]')
-        .forEach(link => {
-          const url     = link.href.split('?')[0].replace(/\/$/, '') + '/';
-          const fullUrl = url.startsWith('http') ? url : 'https://www.linkedin.com' + url;
-          if (seen.has(fullUrl)) return;
-          seen.add(fullUrl);
-          const name = link.textContent.trim();
-          if (!name) return;
-          const card = link.closest('.artdeco-entity-lockup, li');
-          let title = '';
-          let photoUrl = '';
-          if (card) {
-            const sub = card.querySelector('.artdeco-entity-lockup__subtitle');
-            if (sub) title = sub.textContent.trim().replace(/\s+/g, ' ');
-            const img = card.querySelector('img[src*="licdn.com"], img[src*="media.licdn"]');
-            if (img?.src && img.src.startsWith('http')) photoUrl = img.src;
-          }
-          data.push({ name, title, url: fullUrl, photoUrl });
-        });
-      return data;
-    }
-
-    const interval = setInterval(() => {
-      const current = document.querySelectorAll(
-        '.artdeco-entity-lockup__title a[href*="/in/"]'
-      ).length;
-
-      // Stop early if we already have enough people to yield 20 recruiters
-      if (current >= maxPeople) {
-        clearInterval(interval);
-        resolve(scrape());
-        return;
-      }
-
-      window.scrollBy(0, 1000);
-      const btn = [...document.querySelectorAll('button')].find(
-        b => b.textContent.trim().toLowerCase().includes('show more results')
-      );
-      if (btn) btn.click();
-
-      if (current === lastCount) {
-        stableRounds++;
-      } else {
-        stableRounds = 0;
-        lastCount = current;
-      }
-
-      if (stableRounds >= 3) {
-        clearInterval(interval);
-        resolve(scrape());
-      }
-    }, 600);
-
-    setTimeout(() => {
-      clearInterval(interval);
-      resolve(scrape());
-    }, 15000);
-  });
-}
-
-// ── NEW: Injected scraper with #Hiring frame detection ────────────────────────
-// Same scroll/scrape structure as above, adds hiringFrame detection per card.
-// Does NOT modify autoScrollAndScrape above.
-
-function autoScrollAndScrapeWithHiringFrame() {
-  return new Promise((resolve) => {
-    let lastCount    = 0;
-    let stableRounds = 0;
-
-    function scrape() {
-      const seen = new Set();
-      const data = [];
-
-      document.querySelectorAll('.artdeco-entity-lockup__title a[href*="/in/"]')
-        .forEach(link => {
-          const url     = link.href.split('?')[0].replace(/\/$/, '') + '/';
-          const fullUrl = url.startsWith('http') ? url : 'https://www.linkedin.com' + url;
-          if (seen.has(fullUrl)) return;
-          seen.add(fullUrl);
-
-          const name = link.textContent.trim();
-          if (!name) return;
-
-          const card = link.closest('.artdeco-entity-lockup, li');
-          let title = '';
-          if (card) {
-            const sub = card.querySelector('.artdeco-entity-lockup__subtitle');
-            if (sub) title = sub.textContent.trim().replace(/\s+/g, ' ');
-          }
-
-          // ── #Hiring frame detection ──────────────────────────────────────
-          // LinkedIn marks the hiring frame via aria-label on the img wrapper
-          // or on the img itself. We check all common patterns.
-          let hiringFrame = false;
-          if (card) {
-            const hiringKeywords = ['hiring', '#hiring', 'open to hiring'];
-
-            // Check 1: aria-label on any element inside the card
-            const ariaEls = card.querySelectorAll('[aria-label]');
-            for (const el of ariaEls) {
-              const label = (el.getAttribute('aria-label') || '').toLowerCase();
-              if (hiringKeywords.some(k => label.includes(k))) {
-                hiringFrame = true;
-                break;
-              }
-            }
-
-            // Check 2: img alt text
-            if (!hiringFrame) {
-              const imgs = card.querySelectorAll('img');
-              for (const img of imgs) {
-                const alt = (img.alt || '').toLowerCase();
-                if (hiringKeywords.some(k => alt.includes(k))) {
-                  hiringFrame = true;
-                  break;
-                }
-              }
-            }
-
-            // Check 3: any element's title attribute
-            if (!hiringFrame) {
-              const titleEls = card.querySelectorAll('[title]');
-              for (const el of titleEls) {
-                const t = (el.getAttribute('title') || '').toLowerCase();
-                if (hiringKeywords.some(k => t.includes(k))) {
-                  hiringFrame = true;
-                  break;
-                }
-              }
-            }
-
-            // Check 4: visible text inside the card (some LinkedIn versions
-            // render a small "#Hiring" text label next to the photo)
-            if (!hiringFrame) {
-              const cardText = (card.innerText || '').toLowerCase();
-              if (cardText.includes('#hiring')) hiringFrame = true;
-            }
-          }
-          // ── end hiring frame detection ────────────────────────────────────
-
-          let photoUrl = '';
-          if (card) {
-            const img = card.querySelector('img[src*="licdn.com"], img[src*="media.licdn"]');
-            if (img?.src && img.src.startsWith('http')) photoUrl = img.src;
-          }
-
-          data.push({ name, title, url: fullUrl, hiringFrame, photoUrl });
-        });
-
-      return data;
-    }
-
-    const interval = setInterval(() => {
-      window.scrollBy(0, 1000);
-      const btn = [...document.querySelectorAll('button')].find(
-        b => b.textContent.trim().toLowerCase().includes('show more results')
-      );
-      if (btn) btn.click();
-
-      const current = document.querySelectorAll(
-        '.artdeco-entity-lockup__title a[href*="/in/"]'
-      ).length;
-
-      if (current === lastCount) {
-        stableRounds++;
-      } else {
-        stableRounds = 0;
-        lastCount = current;
-      }
-
-      if (stableRounds >= 2) {
-        clearInterval(interval);
-        resolve(scrape());
-      }
-    }, 500);
-
-    setTimeout(() => {
-      clearInterval(interval);
-      resolve(scrape());
-    }, 15000);
-  });
 }
