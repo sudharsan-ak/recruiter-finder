@@ -40,6 +40,9 @@ const obsDismissBtn = document.getElementById('obsDismissBtn');
 
 const profileNotif = document.getElementById('profileNotif');
 const profileNotifText = document.getElementById('profileNotifText');
+const profileNotifSubtext = document.getElementById('profileNotifSubtext');
+const profileNotifEditWrap = document.getElementById('profileNotifEditWrap');
+const profileCompanyInput = document.getElementById('profileCompanyInput');
 const profileNotifAddBtn = document.getElementById('profileNotifAddBtn');
 const profileNotifDismiss = document.getElementById('profileNotifDismiss');
 const observerModal = document.getElementById('observerModal');

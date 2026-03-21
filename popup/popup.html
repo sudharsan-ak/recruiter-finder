@@ -44,7 +44,14 @@
       </div>
       <div id="queuePanel"></div>
       <div id="profileNotif">
-        <span id="profileNotifText"></span>
+        <div id="profileNotifBody">
+          <div id="profileNotifText"></div>
+          <div id="profileNotifSubtext"></div>
+          <div id="profileNotifEditWrap" style="display:none">
+            <span class="profile-notif-edit-label">Search company:</span>
+            <input type="text" id="profileCompanyInput" />
+          </div>
+        </div>
         <button id="profileNotifAddBtn"></button>
         <button id="profileNotifDismiss" title="Dismiss">✕</button>
       </div>

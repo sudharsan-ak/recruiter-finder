@@ -57,7 +57,7 @@ async function extractCompanyNameFromPage(tabId) {
         if (um) return um[1].replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
 
         const title = document.title || '';
-        let m2 = title.match(/\bat\s+([A-Z][^|–\-·]{2,40}?)(?:\s*[|–\-·]|$)/);
+        let m2 = title.match(/\bat\s+([A-Z][^|\-]{2,40}?)(?:\s*[|\-]|$)/);
         if (m2) return m2[1].trim();
 
         const domain = window.location.hostname.replace(/^www\./, '').split('.')[0];
@@ -86,7 +86,10 @@ async function resolveExternalCompanyAndScan(slug, displayName) {
     if (detectedNorm !== slugNorm && detectedNorm !== displayNorm) {
       chrome.storage.local.get('companySlugMap', data => {
         const m = data.companySlugMap || {};
-        if (!m[detectedNorm]) { m[detectedNorm] = slug; chrome.storage.local.set({ companySlugMap: m }); }
+        if (!m[detectedNorm]) {
+          m[detectedNorm] = slug;
+          chrome.storage.local.set({ companySlugMap: m });
+        }
       });
       addAlias(slug, detectedNorm);
     }
@@ -97,6 +100,7 @@ async function resolveExternalCompanyAndScan(slug, displayName) {
   currentVisaStatus = null;
   currentExperience = null;
   currentEmployeeCount = null;
+  setExternalCompanyEdit(false);
   companyMetaEl.style.display = 'none';
   techStackEl.style.display = 'none';
 
@@ -104,15 +108,16 @@ async function resolveExternalCompanyAndScan(slug, displayName) {
   if (cached) {
     const age = Math.round((Date.now() - cached.scannedAt) / 60000);
     const ageText = age < 60 ? `${age}m ago` : `${Math.round(age / 60)}h ago`;
-    statusBox.textContent = `✅ Loaded from cache (scanned ${ageText}). ${cached.recruiters.length} recruiters.`;
+    statusBox.textContent = `Loaded from cache (scanned ${ageText}). ${cached.recruiters.length} recruiters.`;
     progressBar.style.display = 'block';
     progressFill.style.width = '100%';
     renderResults(cached.recruiters);
     scanBtn.disabled = false;
-    scanBtn.textContent = '🔄 Re-scan';
+    scanBtn.textContent = 'Re-scan';
     errorDiv.style.display = 'block';
     errorDiv.style.color = '#0a66c2';
-    errorDiv.textContent = `💡 Showing cached results. Click "Re-scan" to fetch fresh data.`;
+    errorDiv.textContent = 'Showing cached results. Click "Re-scan" to fetch fresh data.';
+    globalThis.refreshProfileRecruiterState?.(slug, displayName);
     return;
   }
 
@@ -123,16 +128,22 @@ async function resolveExternalCompanyAndScan(slug, displayName) {
     isScanning = false;
     currentScanSlug = null;
     scanBtn.disabled = false;
-    scanBtn.textContent = '🔄 Re-scan';
+    scanBtn.textContent = 'Re-scan';
     renderQueue();
   }
+  globalThis.refreshProfileRecruiterState?.(slug, displayName);
 }
 
 function showDisambiguationPanel(companies, searchedName) {
-  statusBox.textContent = `Multiple companies found for "${searchedName}" — pick the right one:`;
+  statusBox.textContent = `Multiple companies found for "${searchedName}". Pick the right one:`;
 
   const panel = document.getElementById('disambigPanel');
-  panel.innerHTML = companies.map(c => {
+  panel.innerHTML =
+    `<div class="disambig-header">
+      <div class="disambig-header-title">Company matches</div>
+      <button class="disambig-clear-btn" id="clearDisambigBtn">Clear</button>
+    </div>` +
+    companies.map(c => {
     const initials = c.name.split(' ').filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('');
     const logoHtml = c.logoUrl
       ? `<img class="disambig-logo" src="${c.logoUrl}" alt="" />`
@@ -142,7 +153,7 @@ function showDisambiguationPanel(companies, searchedName) {
         ${logoHtml}
         <div class="disambig-info">
           <div class="disambig-name">${c.name}</div>
-          ${c.subtitle  ? `<div class="disambig-sub">${c.subtitle}</div>`  : ''}
+          ${c.subtitle ? `<div class="disambig-sub">${c.subtitle}</div>` : ''}
           ${c.secondary ? `<div class="disambig-sec">${c.secondary}</div>` : ''}
         </div>
         <button class="disambig-pick-btn" data-slug="${c.slug}" data-name="${c.name}">Select</button>
@@ -152,25 +163,39 @@ function showDisambiguationPanel(companies, searchedName) {
   panel.querySelectorAll('.disambig-pick-btn').forEach(btn => {
     btn.addEventListener('click', () => resolveExternalCompanyAndScan(btn.dataset.slug, btn.dataset.name));
   });
+  panel.querySelector('#clearDisambigBtn')?.addEventListener('click', () => {
+    panel.innerHTML = '';
+    panel.style.display = 'none';
+    statusBox.textContent = 'Company matches cleared. Click "Scan" to search again.';
+  });
 
   panel.style.display = 'block';
 }
 
-async function performExternalSearch() {
+async function performExternalSearch(searchName = detectedExternalCompanyName, idleButtonText = 'Find Recruiters') {
+  const companyName = (searchName || '').trim();
+  if (!companyName) {
+    statusBox.textContent = 'Enter a company name to search LinkedIn.';
+    scanBtn.disabled = false;
+    scanBtn.textContent = idleButtonText;
+    return;
+  }
+
+  detectedExternalCompanyName = companyName;
   scanBtn.disabled = true;
-  scanBtn.textContent = '🔍 Searching...';
+  scanBtn.textContent = 'Searching...';
   errorDiv.style.display = 'none';
-  statusBox.textContent = `🔍 Searching LinkedIn for "${detectedExternalCompanyName}"...`;
+  statusBox.textContent = `Searching LinkedIn for "${companyName}"...`;
 
   const response = await new Promise(resolve =>
-    chrome.runtime.sendMessage({ action: 'searchCompanies', companyName: detectedExternalCompanyName }, resolve)
+    chrome.runtime.sendMessage({ action: 'searchCompanies', companyName }, resolve)
   );
 
   if (!response?.success || !response.companies?.length) {
     scanBtn.disabled = false;
-    scanBtn.textContent = '🚀 Find Recruiters';
-    statusBox.textContent = `⚠️ No LinkedIn companies found for "${detectedExternalCompanyName}".`;
-    errorDiv.textContent = `💡 Try the Bulk tab — enter the company's LinkedIn slug (e.g. "vercel", "braze").`;
+    scanBtn.textContent = idleButtonText;
+    statusBox.textContent = `No LinkedIn companies found for "${companyName}".`;
+    errorDiv.textContent = 'Try the Bulk tab if you already know the company LinkedIn slug.';
     errorDiv.style.color = '#0a66c2';
     errorDiv.style.display = 'block';
     return;
@@ -180,8 +205,8 @@ async function performExternalSearch() {
     await resolveExternalCompanyAndScan(response.companies[0].slug, response.companies[0].name);
   } else {
     scanBtn.disabled = false;
-    scanBtn.textContent = '🚀 Find Recruiters';
-    showDisambiguationPanel(response.companies, detectedExternalCompanyName);
+    scanBtn.textContent = idleButtonText;
+    showDisambiguationPanel(response.companies, companyName);
   }
 }
 
@@ -197,7 +222,7 @@ async function handleExternalPage(tab) {
 
   scanBtn.disabled = true;
   _onJobPage = true;
-  statusBox.textContent = '🔍 Detecting company from page...';
+  statusBox.textContent = 'Detecting company from page...';
 
   getVisaSponsorshipFromJobPage(tab.id).then(s => showVisaMeta(s));
   getTechStackFromJobPage(tab.id).then(s => showTechStack(s));
@@ -208,14 +233,15 @@ async function handleExternalPage(tab) {
   if (!companyName) companyName = await extractCompanyNameFromPage(tab.id);
 
   if (!companyName) {
-    statusBox.textContent = '⚠️ Could not detect company. Are you on a job posting page?';
+    statusBox.textContent = 'Could not detect company. Are you on a job posting page?';
     scanBtn.disabled = false;
-    scanBtn.textContent = '🚀 Find Recruiters';
+    scanBtn.textContent = 'Find Recruiters';
     return;
   }
 
   detectedExternalCompanyName = companyName;
   companyEl.textContent = companyName;
+  setExternalCompanyEdit(true);
 
   const earlyHit = await checkCacheByName(companyName);
   if (earlyHit) {
@@ -224,19 +250,19 @@ async function handleExternalPage(tab) {
     companyEl.textContent = entry.displayName || companyName;
     const age = Math.round((Date.now() - entry.scannedAt) / 60000);
     const ageText = age < 60 ? `${age}m ago` : `${Math.round(age / 60)}h ago`;
-    statusBox.textContent = `✅ Loaded from cache (scanned ${ageText}). ${entry.recruiters.length} recruiters.`;
+    statusBox.textContent = `Loaded from cache (scanned ${ageText}). ${entry.recruiters.length} recruiters.`;
     progressBar.style.display = 'block';
     progressFill.style.width = '100%';
     renderResults(entry.recruiters, entry.logoUrl);
     scanBtn.disabled = false;
-    scanBtn.textContent = '🔄 Re-scan';
+    scanBtn.textContent = 'Re-scan';
     errorDiv.style.display = 'block';
     errorDiv.style.color = '#0a66c2';
-    errorDiv.textContent = `💡 Showing cached results. Click "Re-scan" to search LinkedIn again.`;
+    errorDiv.textContent = 'Showing cached results. Click "Re-scan" to search LinkedIn again.';
     return;
   }
 
-  statusBox.textContent = `Click "Find Recruiters" to search LinkedIn for "${companyName}".`;
+  statusBox.textContent = `Click "Scan" to search LinkedIn for "${companyName}".`;
   scanBtn.disabled = false;
-  scanBtn.textContent = '🚀 Find Recruiters';
+  scanBtn.textContent = 'Scan';
 }

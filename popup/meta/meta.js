@@ -3,6 +3,7 @@ let currentVisaStatus = null;
 let currentExperience = null;
 let currentTechStack = null;
 let currentJobDetails = null;
+let externalCompanyEditEnabled = false;
 
 function fmtEmpCount(str) {
   if (!str) return '';
@@ -13,7 +14,11 @@ function updateCompanyMetaDisplay() {
   const parts = [];
   const companyName = companyEl?.textContent?.trim();
   if (companyName) {
-    parts.push(`<span class="meta-company">${companyName}</span>`);
+    if (externalCompanyEditEnabled) {
+      parts.push(`<input type="text" class="meta-company-input" value="${companyName.replace(/"/g, '&quot;')}" />`);
+    } else {
+      parts.push(`<span class="meta-company">${companyName}</span>`);
+    }
   }
   if (currentEmployeeCount) {
     parts.push(`<span class="emp-count-chip" title="Click to edit">&#128101; ${currentEmployeeCount}</span>`);
@@ -44,6 +49,14 @@ function updateCompanyMetaDisplay() {
     if (_onJobPage) {
       document.getElementById('copyJdBtn').addEventListener('click', handleCopyJd);
     }
+
+    const companyInput = companyMetaEl.querySelector('.meta-company-input');
+    if (companyInput) {
+      companyInput.addEventListener('input', () => {
+        companyEl.textContent = companyInput.value.trim();
+      });
+    }
+
     const empChip = companyMetaEl.querySelector('.emp-count-chip');
     if (empChip) {
       empChip.style.cursor = 'pointer';
@@ -82,6 +95,11 @@ function updateCompanyMetaDisplay() {
 
 function showCompanyMeta(employeeCount) {
   currentEmployeeCount = employeeCount || null;
+  updateCompanyMetaDisplay();
+}
+
+function setExternalCompanyEdit(enabled) {
+  externalCompanyEditEnabled = !!enabled;
   updateCompanyMetaDisplay();
 }
 
@@ -149,6 +167,3 @@ async function getEmployeeCountFromJobPage(tabId, attempt = 0) {
     return null;
   }
 }
-
-
-

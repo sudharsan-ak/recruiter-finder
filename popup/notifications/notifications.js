@@ -1,20 +1,61 @@
-// -Profile page recruiter notification state ─────────────────────────────────
 let _profileRecruiter = null;
 let _obsPending = { slug: null, recruiters: [] };
+let _obsModalSlug = null;
 
-// -Profile page recruiter notification ──────────────────────────────────────
+function normalizeUrl(url) {
+  return (url || '').split('?')[0].replace(/\/$/, '').toLowerCase();
+}
 
-function setProfileNotif(text, buttonText = '', showButton = false) {
+function setProfileNotif({
+  text = '',
+  subtext = '',
+  buttonText = '',
+  showButton = false,
+  editableCompany = false,
+  companyValue = ''
+} = {}) {
   profileNotifText.textContent = text;
+  profileNotifSubtext.textContent = subtext;
   profileNotifAddBtn.textContent = buttonText;
   profileNotifAddBtn.style.display = showButton ? '' : 'none';
+  profileNotifEditWrap.style.display = editableCompany ? 'flex' : 'none';
+  if (editableCompany) profileCompanyInput.value = companyValue || '';
   profileNotif.classList.add('visible');
+}
+
+function hideProfileNotif() {
+  profileNotif.classList.remove('visible');
+  profileNotifAddBtn.style.display = '';
+  profileNotifEditWrap.style.display = 'none';
+  profileNotifText.textContent = '';
+  profileNotifSubtext.textContent = '';
+  _profileRecruiter = null;
+}
+
+function setProfileInlineCompanyEditor(companyName) {
+  currentEmployeeCount = null;
+  currentVisaStatus = null;
+  currentExperience = null;
+  companyEl.textContent = companyName || '';
+  companyMetaEl.innerHTML = '';
+
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.value = companyName || '';
+  input.className = 'profile-inline-company-input';
+  input.addEventListener('input', () => {
+    const value = input.value.trim();
+    companyEl.textContent = value;
+    if (_profileRecruiter) _profileRecruiter.companyName = value;
+  });
+
+  companyMetaEl.appendChild(input);
+  companyMetaEl.style.display = 'flex';
 }
 
 async function showProfileNotif({ name, title, url, companySlug, companyName, photoUrl = null }) {
   const cached = await getCached(companySlug);
 
-  // Case 3: company has cache → load it into the panel automatically
   if (cached?.recruiters?.length) onCompanyChange(companySlug);
 
   if (cached) {
@@ -23,27 +64,50 @@ async function showProfileNotif({ name, title, url, companySlug, companyName, ph
       _profileRecruiter = null;
       statusBox.textContent = `Checked profile: ${name} is already in your ${companyName} cache.`;
       errorDiv.style.display = 'none';
-      setProfileNotif(`👤 ${name} is already in your ${companyName} cache.`, '', false);
+      setProfileNotif({
+        text: `${name} is already in your ${companyName} cache.`,
+        subtext: '',
+        showButton: false,
+        editableCompany: false
+      });
       return;
     }
+
     _profileRecruiter = { name, title, url, companySlug, companyName, photoUrl, mode: 'add' };
     statusBox.textContent = `Checked profile: ${name} is not in your ${companyName} cache yet.`;
     errorDiv.style.display = 'none';
-    setProfileNotif(`👤 ${name} · not in your ${companyName} list yet`, `➕ Add to ${companyName}`, true);
-  } else {
-    _profileRecruiter = { name, title, url, companySlug, companyName, photoUrl, mode: 'new' };
-    if (companySlug) onCompanyChange(companySlug);
-    statusBox.textContent = `Checked profile: ${companyName} is not in cache yet.`;
-    errorDiv.style.display = 'none';
-    setProfileNotif(`👤 ${name} · ${companyName} is not in cache yet`, '➕ Save recruiter', true);
+    setProfileNotif({
+      text: `${name} is not in your ${companyName} cache yet.`,
+      subtext: 'Add this recruiter to the existing company cache?',
+      buttonText: `Add to ${companyName}`,
+      showButton: true,
+      editableCompany: false
+    });
+    return;
   }
+
+  _profileRecruiter = { name, title, url, companySlug, companyName, photoUrl, mode: 'new' };
+  statusBox.textContent = `Checked profile: ${companyName} is not in cache yet.`;
+  errorDiv.style.display = 'none';
+  scanBtn.disabled = false;
+  scanBtn.textContent = 'Scan';
+  setProfileInlineCompanyEditor(companyName);
+  setProfileNotif({
+    text: `${companyName} is not in cache yet`,
+    subtext: `Recruiter detected: ${name}`,
+    showButton: false,
+    editableCompany: false
+  });
 }
 
-function hideProfileNotif() {
-  profileNotif.classList.remove('visible');
-  profileNotifAddBtn.style.display = '';
-  _profileRecruiter = null;
+async function refreshProfileRecruiterState(slug, displayName) {
+  if (!_profileRecruiter) return;
+  _profileRecruiter.companySlug = slug || _profileRecruiter.companySlug;
+  _profileRecruiter.companyName = displayName || _profileRecruiter.companyName;
+  await showProfileNotif(_profileRecruiter);
 }
+
+globalThis.refreshProfileRecruiterState = refreshProfileRecruiterState;
 
 profileNotifDismiss.addEventListener('click', hideProfileNotif);
 
@@ -51,8 +115,9 @@ profileNotifAddBtn.addEventListener('click', async () => {
   if (!_profileRecruiter) return;
   const { name, title, url, companySlug, companyName, photoUrl, mode } = _profileRecruiter;
   const recruiter = { name, title, url, photoUrl: photoUrl || null };
-  const cache = await new Promise(r => chrome.storage.local.get(CACHE_KEY, r));
-  const history = cache[CACHE_KEY] || {};
+  const cacheData = await new Promise(r => chrome.storage.local.get(CACHE_KEY, r));
+  const history = cacheData[CACHE_KEY] || {};
+
   if (mode === 'add') {
     const existing = history[companySlug] || { recruiters: [] };
     const existingUrls = new Set(existing.recruiters.map(r => normalizeUrl(r.url)));
@@ -60,13 +125,12 @@ profileNotifAddBtn.addEventListener('click', async () => {
     await saveToCache(companySlug, merged, existing.logoUrl || null);
     if (companySlug === currentSlug) {
       renderResults(merged);
-      statusBox.textContent = `✅ Added ${name}! ${merged.length} recruiters total.`;
+      statusBox.textContent = `Added ${name}. ${merged.length} recruiters total.`;
     }
   } else {
-    // New company entry with just this one recruiter
     await saveToCache(companySlug, [recruiter], null);
     if (companyName) await renameCompanyInCache(companySlug, companyName);
-    statusBox.textContent = `✅ Saved ${name} under ${companyName}.`;
+    statusBox.textContent = `Saved ${name} under ${companyName}.`;
   }
   hideProfileNotif();
 });
@@ -89,14 +153,14 @@ function handleProfileCheckResult(result) {
   }
 
   if (status === 'company_unresolved') {
-    statusBox.textContent = `⚠️ Recruiter detected, but the current company could not be resolved.`;
+    statusBox.textContent = 'Recruiter detected, but the current company could not be resolved.';
     errorDiv.style.display = 'block';
     errorDiv.style.color = '#c0392b';
     errorDiv.textContent = reason || `Could not resolve a canonical company slug for ${name}${title ? ` (${title})` : ''}.`;
     return;
   }
 
-  statusBox.textContent = '⚠️ Could not determine the profile state.';
+  statusBox.textContent = 'Could not determine the profile state.';
   if (reason) {
     errorDiv.style.display = 'block';
     errorDiv.style.color = '#c0392b';
@@ -106,32 +170,27 @@ function handleProfileCheckResult(result) {
 
 function updateObserverNotif() {
   const { slug, recruiters } = _obsPending;
-  if (!slug || !recruiters.length) { observerNotif.classList.remove('visible'); return; }
+  if (!slug || !recruiters.length) {
+    observerNotif.classList.remove('visible');
+    return;
+  }
   const displayName = slug.replace(/-/g, ' ');
   const n = recruiters.length;
-  obsText.textContent = `👤 ${n} new recruiter${n !== 1 ? 's' : ''} spotted at ${displayName}`;
+  obsText.textContent = `${n} new recruiter${n !== 1 ? 's' : ''} spotted at ${displayName}`;
   observerNotif.classList.add('visible');
 }
 
-function normalizeUrl(url) {
-  return (url || '').split('?')[0].replace(/\/$/, '').toLowerCase();
-}
-
 async function showObserverNotif(slug, recruiters) {
-  // Filter to only recruiters not already saved in cache for this company.
-  // Normalize both sides (trailing slash, query params, case) to avoid mismatches.
   const cached = await getCached(slug);
   const cachedUrls = new Set((cached?.recruiters || []).map(r => normalizeUrl(r.url)));
   const newOnes = recruiters.filter(r => !cachedUrls.has(normalizeUrl(r.url)));
   if (!newOnes.length) {
-    // Everything has been added — make sure banner is hidden
     observerNotif.classList.remove('visible');
     _obsPending = { slug: null, recruiters: [] };
     return;
   }
   _obsPending = { slug, recruiters: newOnes };
-  updateObserverNotif(); // shows banner with updated count
-  // If modal is already open for this slug, refresh its list
+  updateObserverNotif();
   if (observerModal.classList.contains('open') && _obsModalSlug === slug) {
     populateObsModal();
   }
@@ -142,14 +201,11 @@ function hideObserverNotif() {
   _obsPending = { slug: null, recruiters: [] };
 }
 
-// -Observer modal ────────────────────────────────────────────────────────────
-let _obsModalSlug = null;
-
 function populateObsModal() {
   const { slug, recruiters } = _obsPending;
   _obsModalSlug = slug;
   const displayName = slug.replace(/-/g, ' ');
-  obsModalTitle.textContent = `👤 New Recruiters at ${displayName}`;
+  obsModalTitle.textContent = `New Recruiters at ${displayName}`;
   obsModalList.innerHTML = recruiters.map((r, i) => `
     <div class="obs-row">
       <input type="checkbox" class="obs-check" data-i="${i}" checked />
@@ -159,9 +215,7 @@ function populateObsModal() {
       </div>
     </div>`).join('');
   updateObsModalCount();
-  obsModalList.querySelectorAll('.obs-check').forEach(cb =>
-    cb.addEventListener('change', updateObsModalCount)
-  );
+  obsModalList.querySelectorAll('.obs-check').forEach(cb => cb.addEventListener('change', updateObsModalCount));
 }
 
 function updateObsModalCount() {
@@ -176,7 +230,6 @@ obsShowBtn.addEventListener('click', () => {
 });
 
 obsDismissBtn.addEventListener('click', async () => {
-  // Tell content script to un-mark these URLs so the observer can re-detect them
   const urls = _obsPending.recruiters.map(r => r.url);
   if (urls.length) {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
@@ -195,26 +248,24 @@ obsModalAddBtn.addEventListener('click', async () => {
   if (!slug) return;
   const checked = [...obsModalList.querySelectorAll('.obs-check:checked')];
   const indices = new Set(checked.map(cb => parseInt(cb.dataset.i)));
-  const toAdd      = _obsPending.recruiters.filter((_, i) => indices.has(i));
-  const remaining  = _obsPending.recruiters.filter((_, i) => !indices.has(i));
+  const toAdd = _obsPending.recruiters.filter((_, i) => indices.has(i));
+  const remaining = _obsPending.recruiters.filter((_, i) => !indices.has(i));
   if (!toAdd.length) return;
 
-  // Merge selected into cache
   const cache = await getCache();
   const existing = cache[slug]?.recruiters || [];
   const existingUrls = new Set(existing.map(r => normalizeUrl(r.url)));
   const merged = [...existing, ...toAdd.filter(r => !existingUrls.has(normalizeUrl(r.url)))];
   await saveToCache(slug, merged, cache[slug]?.logoUrl || null);
 
-  // Update pending — keep unselected ones
   _obsPending.recruiters = remaining;
   observerModal.classList.remove('open');
   _obsModalSlug = null;
-  updateObserverNotif(); // hide banner if nothing left, else update count
+  updateObserverNotif();
 
   if (slug === currentSlug) {
     renderResults(merged);
-    statusBox.textContent = `✅ Added ${toAdd.length}! ${merged.length} recruiter${merged.length !== 1 ? 's' : ''} total.`;
+    statusBox.textContent = `Added ${toAdd.length}. ${merged.length} recruiters total.`;
   }
 });
 

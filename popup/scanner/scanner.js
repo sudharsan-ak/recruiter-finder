@@ -119,6 +119,14 @@ scanBtn.addEventListener('click', async () => {
 
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
+  if (tab?.url?.match(/linkedin\.com\/in\/[^/?#]+/) && _profileRecruiter?.mode === 'new') {
+    const inlineCompanyInput = document.querySelector('.profile-inline-company-input');
+    const companyName = (inlineCompanyInput?.value || _profileRecruiter.companyName || companyEl.textContent || '').trim();
+    hideProfileNotif();
+    await performExternalSearch(companyName, 'Scan');
+    return;
+  }
+
   let slug = extractCompanySlug(tab);
   if (!slug) {
     statusBox.textContent = 'Detecting company from job posting...';
@@ -132,7 +140,7 @@ scanBtn.addEventListener('click', async () => {
       slug = currentSlug;
     } else {
       // Slug not resolved yet — run LinkedIn search + disambiguation flow
-      await performExternalSearch();
+      await performExternalSearch(companyEl.textContent.trim(), 'Scan');
       return;
     }
   }

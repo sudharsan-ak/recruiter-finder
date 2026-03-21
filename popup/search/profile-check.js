@@ -4,6 +4,9 @@ let _profileWaitTimer = null;
 function resetProfileUiState() {
   profileNotif.classList.remove('visible');
   profileNotifAddBtn.style.display = '';
+  if (profileNotifEditWrap) profileNotifEditWrap.style.display = 'none';
+  if (profileNotifText) profileNotifText.textContent = '';
+  if (profileNotifSubtext) profileNotifSubtext.textContent = '';
   errorDiv.style.display = 'none';
 }
 
