@@ -3,7 +3,7 @@ const modalError   = document.getElementById('modalError');
 const modalSaveBtn = document.getElementById('modalSaveBtn');
 
 function openAddRecruiterModal() {
-  ['mName','mTitle','mUrl','mCompany','mCompanyUrl'].forEach(id => {
+  ['mName','mTitle','mEmail','mUrl','mCompany','mCompanyUrl'].forEach(id => {
     document.getElementById(id).value = '';
   });
   modalError.textContent = '';
@@ -46,6 +46,7 @@ async function backfillLogos() {
     } catch {}
   }
 }
+globalThis.backfillLogos = backfillLogos;
 
 addRecruiterBtn.addEventListener('click', openAddRecruiterModal);
 
@@ -68,6 +69,7 @@ modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
 modalSaveBtn.addEventListener('click', async () => {
   const name       = document.getElementById('mName').value.trim();
   const title      = document.getElementById('mTitle').value.trim();
+  const email      = document.getElementById('mEmail').value.trim().toLowerCase();
   const url        = document.getElementById('mUrl').value.trim();
   const company    = document.getElementById('mCompany').value.trim();
   const companyUrl = document.getElementById('mCompanyUrl').value.trim();
@@ -75,6 +77,10 @@ modalSaveBtn.addEventListener('click', async () => {
   if (!name)    { modalError.textContent = 'Name is required.'; return; }
   if (!url)     { modalError.textContent = 'Profile URL is required.'; return; }
   if (!company) { modalError.textContent = 'Company name is required.'; return; }
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    modalError.textContent = 'Email must be a valid address.';
+    return;
+  }
   if (!url.includes('linkedin.com/in/')) {
     modalError.textContent = 'Profile URL must be a LinkedIn /in/ URL.';
     return;
@@ -93,10 +99,10 @@ modalSaveBtn.addEventListener('click', async () => {
   if (cache[slug]) {
     const exists = cache[slug].recruiters.some(r => r.url === profileUrl);
     if (exists) { modalError.textContent = 'This profile is already saved for this company.'; return; }
-    cache[slug].recruiters.push({ name, title, url: profileUrl, photoUrl: '' });
+    cache[slug].recruiters.push({ name, title, url: profileUrl, photoUrl: '', email });
   } else {
     cache[slug] = {
-      recruiters: [{ name, title, url: profileUrl, photoUrl: '' }],
+      recruiters: [{ name, title, url: profileUrl, photoUrl: '', email }],
       logoUrl: null,
       scannedAt: Date.now(),
       displayName: company,

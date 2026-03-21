@@ -106,7 +106,7 @@ tabBulkBtn.addEventListener('click', () => {
 
 tabHistoryBtn.addEventListener('click', () => activateTab(tabHistoryBtn, historyPanel, () => {
   renderHistory();
-  backfillLogos();
+  globalThis.backfillLogos?.();
 }));
 
 chrome.runtime.onMessage.addListener((request) => {

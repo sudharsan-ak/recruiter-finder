@@ -1,5 +1,18 @@
 let _historySortMode = 'latest';
 
+async function renderHistoryPreservingState(filter = '') {
+  const openSlugs = [...historyList.querySelectorAll('.history-recruiters.open')]
+    .map(el => el.id.replace(/^hist-/, ''));
+  const scrollTop = historyList.scrollTop;
+
+  await renderHistory(filter);
+
+  openSlugs.forEach(slug => {
+    document.getElementById(`hist-${slug}`)?.classList.add('open');
+  });
+  historyList.scrollTop = scrollTop;
+}
+
 function compareHistoryEntries(a, b, cache) {
   const entryA = cache[a];
   const entryB = cache[b];
@@ -44,7 +57,9 @@ async function renderHistory(filter = '') {
     const entry = cache[slug];
     if ((entry.displayName || slug).toLowerCase().includes(lf)) return true;
     return entry.recruiters.some(r =>
-      r.name.toLowerCase().includes(lf) || (r.title || '').toLowerCase().includes(lf)
+      r.name.toLowerCase().includes(lf) ||
+      (r.title || '').toLowerCase().includes(lf) ||
+      (r.email || '').toLowerCase().includes(lf)
     );
   });
 
@@ -66,17 +81,23 @@ async function renderHistory(filter = '') {
           const photo = r.photoUrl
             ? `<img class="h-photo" src="${r.photoUrl}" alt="" />`
             : '';
+          const email = (r.email || '').trim().toLowerCase();
           return `
             <div class="history-recruiter-row" id="hr-${slug}-${encodeURIComponent(r.url)}" data-url="${r.url}">
               <input type="checkbox" class="h-check" data-url="${r.url}" />
               ${photo}
               <div class="h-info">
-                <span class="h-name">${hl(r.name, lf)}</span>
+                <div class="h-name-row">
+                  <span class="h-name">${hl(r.name, lf)}</span>
+                  ${email ? `<span class="h-email">${hl(email, lf)}</span>` : ''}
+                </div>
                 <span class="h-title">${hl(r.title || '—', lf)}</span>
               </div>
               <div class="h-actions">
                 <span class="h-link"><a href="${r.url}" target="_blank">Profile →</a></span>
                 <button class="h-copy-link" data-url="${r.url}" title="Copy profile link">🔗</button>
+                ${email ? `<button class="h-copy-email" data-email="${email}" title="Copy email">✉</button>` : ''}
+                <button class="h-edit-email" data-slug="${slug}" data-url="${r.url}" data-email="${email}" title="${email ? 'Edit email' : 'Add email'}">${email ? '✏️' : '＋Email'}</button>
                 <button class="h-delete-recruiter" data-slug="${slug}" data-url="${r.url}" title="Remove from history">🗑</button>
               </div>
             </div>`;
@@ -109,7 +130,9 @@ async function renderHistory(filter = '') {
             ).join('')}
             <button class="add-alias-btn" data-slug="${slug}">＋</button>
           </div>
-          ${rows}
+          <div class="history-recruiter-list${recruiters.length > 5 ? ' is-scrollable' : ''}">
+            ${rows}
+          </div>
           ${recruiters.length > 0
             ? `<div class="history-company-actions">
                 <button class="copy-history-selected-btn" data-slug="${slug}" style="display:none">📋 Copy Selected</button>
@@ -138,7 +161,10 @@ async function renderHistory(filter = '') {
   document.querySelectorAll('.history-company-header').forEach(header => {
     header.addEventListener('click', (e) => {
       if (e.target.classList.contains('delete-entry-btn')) return;
-      document.getElementById(`hist-${header.dataset.slug}`).classList.toggle('open');
+      const target = document.getElementById(`hist-${header.dataset.slug}`);
+      const willOpen = !target.classList.contains('open');
+      historyList.querySelectorAll('.history-recruiters.open').forEach(el => el.classList.remove('open'));
+      if (willOpen) target.classList.add('open');
     });
   });
 
@@ -223,6 +249,61 @@ async function renderHistory(filter = '') {
     btn.addEventListener('click', e => {
       e.stopPropagation();
       copyLink(btn.dataset.url, btn, '🔗');
+    });
+  });
+
+  document.querySelectorAll('.h-copy-email').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      copyLink(btn.dataset.email, btn, '✉');
+    });
+  });
+
+  document.querySelectorAll('.h-edit-email').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      if (btn.dataset.editing === 'true') return;
+      btn.dataset.editing = 'true';
+      const current = btn.dataset.email || '';
+      const input = document.createElement('input');
+      input.type = 'email';
+      input.className = 'h-email-input';
+      input.placeholder = 'name@company.com';
+      input.value = current;
+      btn.replaceWith(input);
+      input.focus();
+      input.select();
+
+      const restoreButton = () => renderHistoryPreservingState(historySearch.value);
+
+      const save = async () => {
+        const normalized = input.value.trim().toLowerCase();
+        if (normalized && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized)) {
+          globalThis.setHistoryActionStatus?.('Invalid email address');
+          restoreButton();
+          return;
+        }
+        const updated = await upsertRecruiterEmail(btn.dataset.slug, btn.dataset.url, normalized);
+        if (!updated) {
+          globalThis.setHistoryActionStatus?.('Could not update recruiter email');
+          restoreButton();
+          return;
+        }
+        globalThis.setHistoryActionStatus?.(normalized ? 'Recruiter email updated' : 'Recruiter email cleared');
+        renderHistoryPreservingState(historySearch.value);
+      };
+
+      input.addEventListener('blur', save);
+      input.addEventListener('keydown', e2 => {
+        if (e2.key === 'Enter') {
+          e2.preventDefault();
+          input.blur();
+        }
+        if (e2.key === 'Escape') {
+          e2.preventDefault();
+          restoreButton();
+        }
+      });
     });
   });
 

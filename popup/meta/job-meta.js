@@ -136,11 +136,11 @@ async function getJobDetailsFromPage(tabId, tabUrl) {
 async function handleCopyJd() {
   const btn = document.getElementById('copyJdBtn');
   if (!btn) return;
-  btn.textContent = '?';
+  btn.textContent = '…';
 
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   if (!tab) {
-    btn.textContent = '?? JD';
+    btn.innerHTML = '&#128203; JD';
     return;
   }
 
@@ -156,11 +156,11 @@ async function handleCopyJd() {
   ].join('\n');
 
   navigator.clipboard.writeText(text).then(() => {
-    btn.textContent = '? Copied!';
-    setTimeout(() => { btn.textContent = '?? JD'; }, 2000);
+    btn.textContent = 'Copied!';
+    setTimeout(() => { btn.innerHTML = '&#128203; JD'; }, 2000);
   }).catch(() => {
-    btn.textContent = '? Failed';
-    setTimeout(() => { btn.textContent = '?? JD'; }, 2000);
+    btn.textContent = 'Failed';
+    setTimeout(() => { btn.innerHTML = '&#128203; JD'; }, 2000);
   });
 }
 
