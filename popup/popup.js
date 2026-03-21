@@ -19,6 +19,7 @@ const historySearch = document.getElementById('historySearch');
 const clearSearchBtn = document.getElementById('clearSearchBtn');
 const clearHistBtn = document.getElementById('clearHistoryBtn');
 const exportCsvBtn = document.getElementById('exportCsvBtn');
+const exportXlsxBtn = document.getElementById('exportXlsxBtn');
 const exportBackupBtn = document.getElementById('exportBackupBtn');
 const importBackupBtn = document.getElementById('importBackupBtn');
 const importFileInput = document.getElementById('importFileInput');

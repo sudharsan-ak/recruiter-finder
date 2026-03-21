@@ -311,15 +311,16 @@ async function renderHistory(filter = '') {
     btn.addEventListener('click', async e => {
       e.stopPropagation();
       const { slug, url } = btn.dataset;
+      const recruiterName = btn.closest('.history-recruiter-row')?.querySelector('.h-name')?.textContent?.trim() || 'this recruiter';
+      const confirmed = await (globalThis.openConfirmModal?.({
+        title: 'Delete recruiter?',
+        message: `Remove ${recruiterName} from this company history?`,
+        confirmText: 'Delete recruiter'
+      }) ?? Promise.resolve(confirm('Delete this recruiter from history?')));
+      if (!confirmed) return;
       await removeRecruiterFromCache(slug, url);
-      const rowId = `hr-${slug}-${encodeURIComponent(url)}`;
-      const row = document.getElementById(rowId);
-      if (row) row.remove();
-      const meta = document.querySelector(`#hc-${slug} .history-meta`);
-      if (meta) {
-        const remaining = document.querySelectorAll(`#hist-${slug} .history-recruiter-row`).length;
-        meta.innerHTML = meta.innerHTML.replace(/^\d+/, remaining);
-      }
+      globalThis.setHistoryActionStatus?.('Recruiter deleted');
+      renderHistoryPreservingState(historySearch.value);
     });
   });
 
@@ -327,12 +328,16 @@ async function renderHistory(filter = '') {
     btn.addEventListener('click', async (e) => {
       e.stopPropagation();
       const slug = btn.dataset.slug;
+      const companyName = document.getElementById(`hn-${slug}`)?.textContent?.trim() || slug;
+      const confirmed = await (globalThis.openConfirmModal?.({
+        title: 'Delete company history?',
+        message: `Delete the saved history for ${companyName}?`,
+        confirmText: 'Delete company'
+      }) ?? Promise.resolve(confirm('Delete this company history?')));
+      if (!confirmed) return;
       await deleteFromCache(slug);
-      const card = document.getElementById(`hc-${slug}`);
-      if (card) card.remove();
-      if (document.querySelectorAll('.history-company').length === 0) {
-        historyList.innerHTML = '<div class="empty-history">No history yet.<br>Run a scan to populate this.</div>';
-      }
+      globalThis.setHistoryActionStatus?.('Company history deleted');
+      renderHistory(historySearch.value);
     });
   });
 
@@ -449,7 +454,12 @@ clearSearchBtn.addEventListener('click', () => {
 });
 
 clearHistBtn.addEventListener('click', async () => {
-  if (!confirm('Clear all history? This cannot be undone.')) return;
+  const confirmed = await (globalThis.openConfirmModal?.({
+    title: 'Clear all history?',
+    message: 'This will remove every saved company and recruiter from History. This cannot be undone.',
+    confirmText: 'Clear all'
+  }) ?? Promise.resolve(confirm('Clear all history? This cannot be undone.')));
+  if (!confirmed) return;
   await chrome.storage.local.remove(CACHE_KEY);
   globalThis.setHistoryActionStatus?.('History cleared');
   renderHistory();

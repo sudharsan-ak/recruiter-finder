@@ -142,6 +142,18 @@
     </div>
   </div>
 
+  <!-- Generic confirmation modal -->
+  <div class="modal-overlay" id="confirmModal" tabindex="-1">
+    <div class="modal">
+      <h2 id="confirmModalTitle">Confirm action</h2>
+      <div id="confirmModalMessage" class="confirm-modal-message"></div>
+      <div class="modal-actions">
+        <button id="confirmModalCancelBtn">Cancel</button>
+        <button id="confirmModalConfirmBtn">Delete</button>
+      </div>
+    </div>
+  </div>
+
   <!-- History panel -->
   <div class="panel" id="historyPanel">
     <div class="history-search-wrap">
@@ -168,10 +180,11 @@
           <button id="refreshLogosBtn" title="Fetch missing company logos">🖼 Refresh Logos</button>
           <button id="updateSlugsBtn" title="Fetch canonical slug for every company and store aliases">🔗 Update Slugs</button>
           <button id="exportCsvBtn">⬇️ Export to CSV</button>
+          <button id="exportXlsxBtn">⬇️ Export to XLSX</button>
           <div class="backup-row">
-            <button id="exportBackupBtn">⬇ Export Backup</button>
-            <button id="importBackupBtn">⬆ Import Backup</button>
-            <input type="file" id="importFileInput" accept=".json,.csv,text/csv" style="display:none" />
+            <button id="exportBackupBtn">⬇ Export JSON</button>
+            <button id="importBackupBtn">⬆ Import CSV/JSON/XLSX</button>
+            <input type="file" id="importFileInput" accept=".json,.csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" style="display:none" />
           </div>
           <button id="clearHistoryBtn">🗑 Clear All</button>
         </div>
@@ -196,9 +209,11 @@
   <script src="meta/meta.js"></script>
   <script src="meta/job-meta.js"></script>
   <script src="meta/tech-stack.js"></script>
+  <script src="vendor/xlsx.full.min.js"></script>
   <script src="storage/slugs.js"></script>
   <script src="storage/external-company.js"></script>
   <script src="storage/export.js"></script>
+  <script src="storage/xlsx-export.js"></script>
   <script src="notifications/notifications.js"></script>
   <script src="history/history-tools.js"></script>
   <script src="history/history-render.js"></script>

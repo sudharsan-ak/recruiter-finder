@@ -25,7 +25,7 @@ async function exportToCSV() {
   }
 
   // Header row
-  const rows = [['Name', 'Company', 'Company LinkedIn Page', 'Role', 'LinkedIn URL', 'Email']];
+  const rows = [['Name', 'Company', 'Email', 'Role', 'LinkedIn URL', 'Company LinkedIn Page']];
 
   keys.forEach(slug => {
     const entry           = cache[slug];
@@ -34,16 +34,16 @@ async function exportToCSV() {
 
     if (entry.recruiters.length === 0) {
       // Still include the company row with empty recruiter fields
-      rows.push(['', companyName, companyLinkedIn, '', '']);
+      rows.push(['', companyName, '', '', '', companyLinkedIn]);
     } else {
       entry.recruiters.forEach(r => {
         rows.push([
           escapeCSV(r.name),
           escapeCSV(companyName),
-          escapeCSV(companyLinkedIn),
+          escapeCSV(r.email || ''),
           escapeCSV(r.title),
           escapeCSV(r.url),
-          escapeCSV(r.email || '')
+          escapeCSV(companyLinkedIn)
         ]);
       });
     }
@@ -135,6 +135,32 @@ function parseCSV(text) {
   return rows.filter(r => r.some(cellVal => String(cellVal || '').trim()));
 }
 
+function parseXlsxRows(file, sheetName = null) {
+  if (!globalThis.XLSX) throw new Error('XLSX library not loaded');
+  return file.arrayBuffer().then(buffer => {
+    const workbook = XLSX.read(buffer, { type: 'array', cellFormula: false, cellHTML: false, cellText: true });
+    const targetSheetName = sheetName || workbook.SheetNames[0];
+    const sheet = workbook.Sheets[targetSheetName];
+    if (!sheet || !sheet['!ref']) throw new Error('Workbook is empty');
+
+    const range = XLSX.utils.decode_range(sheet['!ref']);
+    const rows = [];
+    for (let r = range.s.r; r <= range.e.r; r += 1) {
+      const row = [];
+      for (let c = range.s.c; c <= range.e.c; c += 1) {
+        const ref = XLSX.utils.encode_cell({ r, c });
+        const cell = sheet[ref];
+        row.push({
+          value: cell?.w ?? cell?.v ?? '',
+          link: cell?.l?.Target || '',
+        });
+      }
+      rows.push(row);
+    }
+    return rows.filter(row => row.some(cell => String(cell?.value || '').trim()));
+  });
+}
+
 function normalizeHeader(text) {
   return String(text || '').toLowerCase().replace(/[^a-z0-9]/g, '');
 }
@@ -199,10 +225,19 @@ async function importJsonBackup(text) {
 }
 
 async function importCsvFile(text) {
-  const rows = parseCSV(text);
-  if (rows.length < 2) throw new Error('CSV is empty');
+  const rows = parseCSV(text).map(row => row.map(value => ({ value, link: '' })));
+  return importTabularRows(rows);
+}
 
-  const header = rows[0].map(normalizeHeader);
+async function importXlsxFile(file) {
+  const rows = await parseXlsxRows(file);
+  return importTabularRows(rows);
+}
+
+async function importTabularRows(rows) {
+  if (rows.length < 2) throw new Error('Sheet is empty');
+
+  const header = rows[0].map(cell => normalizeHeader(cell?.value));
   const idx = {
     name: header.indexOf('name'),
     company: header.indexOf('company'),
@@ -219,12 +254,18 @@ async function importCsvFile(text) {
   let recruiterCount = 0;
 
   for (const row of rows.slice(1)) {
-    const companyName = String(row[idx.company] || '').trim();
-    const companyLinkedIn = idx.companyLinkedIn >= 0 ? String(row[idx.companyLinkedIn] || '').trim() : '';
-    const role = idx.role >= 0 ? String(row[idx.role] || '').trim() : '';
-    const profileUrl = idx.linkedinUrl >= 0 ? normalizeRecruiterUrl(row[idx.linkedinUrl]) : '';
-    const recruiterName = idx.name >= 0 ? String(row[idx.name] || '').trim() : '';
-    const email = idx.email >= 0 ? String(row[idx.email] || '').trim().toLowerCase() : '';
+    const companyCell = idx.company >= 0 ? row[idx.company] : null;
+    const companyNameRaw = String(companyCell?.value || '').trim();
+    const companyName = companyNameRaw.replace(/\s*\([^)]*\)\s*$/, '').trim() || companyNameRaw;
+    const companyLinkedIn = idx.companyLinkedIn >= 0
+      ? String(row[idx.companyLinkedIn]?.value || row[idx.companyLinkedIn]?.link || '').trim()
+      : String(companyCell?.link || '').trim();
+    const role = idx.role >= 0 ? String(row[idx.role]?.value || '').trim() : '';
+    const profileUrl = idx.linkedinUrl >= 0
+      ? normalizeRecruiterUrl(row[idx.linkedinUrl]?.link || row[idx.linkedinUrl]?.value)
+      : '';
+    const recruiterName = idx.name >= 0 ? String(row[idx.name]?.value || '').trim() : '';
+    const email = idx.email >= 0 ? String(row[idx.email]?.value || '').trim().toLowerCase() : '';
 
     if (!companyName && !companyLinkedIn) continue;
 
@@ -275,28 +316,33 @@ async function importCsvFile(text) {
   await new Promise(r => chrome.storage.local.set({ [CACHE_KEY]: cache }, r));
   await syncSlugMapFromHistory();
   await syncHistoryAliasesFromSlugMap();
-  return { companyCount: touchedCompanies.size, recruiterCount, mode: 'csv' };
+  return { companyCount: touchedCompanies.size, recruiterCount, mode: 'table' };
 }
 
 async function importBackup(file) {
   try {
-    const text = await file.text();
+    const isXlsx = /\.xlsx$/i.test(file.name) || /spreadsheetml\.sheet/i.test(file.type);
     const isCsv = /\.csv$/i.test(file.name) || /^text\/csv/i.test(file.type);
-    const result = isCsv ? await importCsvFile(text) : await importJsonBackup(text);
+    const result = isXlsx
+      ? await importXlsxFile(file)
+      : isCsv
+        ? await importCsvFile(await file.text())
+        : await importJsonBackup(await file.text());
 
-    if (result.mode === 'csv') {
-      globalThis.setHistoryActionStatus?.(`CSV import done: ${result.recruiterCount} recruiters`);
+    if (result.mode === 'table') {
+      const label = isXlsx ? 'XLSX' : 'CSV';
+      globalThis.setHistoryActionStatus?.(`${label} import done: ${result.recruiterCount} recruiters`);
       importBackupBtn.textContent = `✅ Imported ${result.recruiterCount} recruiter${result.recruiterCount === 1 ? '' : 's'}`;
     } else {
       globalThis.setHistoryActionStatus?.(`Import done: ${result.companyCount} companies`);
       importBackupBtn.textContent = `✅ Imported ${result.companyCount} companies`;
     }
-    setTimeout(() => { importBackupBtn.textContent = '⬆ Import Backup'; }, 3000);
+    setTimeout(() => { importBackupBtn.textContent = '⬆ Import CSV/JSON/XLSX'; }, 3000);
     renderHistory(historySearch.value);
   } catch {
     globalThis.setHistoryActionStatus?.('Import failed');
     importBackupBtn.textContent = '❌ Invalid file';
-    setTimeout(() => { importBackupBtn.textContent = '⬆ Import Backup'; }, 2500);
+    setTimeout(() => { importBackupBtn.textContent = '⬆ Import CSV/JSON/XLSX'; }, 2500);
   }
 }
 

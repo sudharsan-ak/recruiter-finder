@@ -1,6 +1,12 @@
 const modal        = document.getElementById('addRecruiterModal');
 const modalError   = document.getElementById('modalError');
 const modalSaveBtn = document.getElementById('modalSaveBtn');
+const confirmModal = document.getElementById('confirmModal');
+const confirmModalTitle = document.getElementById('confirmModalTitle');
+const confirmModalMessage = document.getElementById('confirmModalMessage');
+const confirmModalCancelBtn = document.getElementById('confirmModalCancelBtn');
+const confirmModalConfirmBtn = document.getElementById('confirmModalConfirmBtn');
+let _confirmResolver = null;
 
 function openAddRecruiterModal() {
   ['mName','mTitle','mEmail','mUrl','mCompany','mCompanyUrl'].forEach(id => {
@@ -14,6 +20,32 @@ function openAddRecruiterModal() {
 function closeModal() {
   modal.classList.remove('open');
 }
+
+function closeConfirmModal(result = false) {
+  confirmModal.classList.remove('open');
+  if (_confirmResolver) {
+    const resolve = _confirmResolver;
+    _confirmResolver = null;
+    resolve(result);
+  }
+}
+
+function openConfirmModal({
+  title = 'Confirm action',
+  message = 'Are you sure?',
+  confirmText = 'Delete'
+} = {}) {
+  if (_confirmResolver) closeConfirmModal(false);
+  confirmModalTitle.textContent = title;
+  confirmModalMessage.textContent = message;
+  confirmModalConfirmBtn.textContent = confirmText;
+  confirmModal.classList.add('open');
+  confirmModalConfirmBtn.focus();
+  return new Promise(resolve => {
+    _confirmResolver = resolve;
+  });
+}
+globalThis.openConfirmModal = openConfirmModal;
 
 async function backfillLogos() {
   const cache = await getCache();
@@ -65,6 +97,15 @@ refreshLogosBtn.addEventListener('click', async () => {
 
 document.getElementById('modalCancelBtn').addEventListener('click', closeModal);
 modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
+confirmModalCancelBtn.addEventListener('click', () => closeConfirmModal(false));
+confirmModalConfirmBtn.addEventListener('click', () => closeConfirmModal(true));
+confirmModal.addEventListener('click', e => { if (e.target === confirmModal) closeConfirmModal(false); });
+confirmModal.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    e.preventDefault();
+    closeConfirmModal(false);
+  }
+});
 
 modalSaveBtn.addEventListener('click', async () => {
   const name       = document.getElementById('mName').value.trim();
