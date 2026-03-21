@@ -167,22 +167,6 @@
 
 .card-url a:hover { text-decoration: underline; }
 
-.keywords-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
-  margin-bottom: 10px;
-}
-
-.kw-chip {
-  font-size: 10px;
-  background: #e0e7ff;
-  color: #3730a3;
-  padding: 2px 8px;
-  border-radius: 10px;
-  font-weight: 600;
-}
-
 #companyMeta {
   font-size: 11px;
   color: #666;
@@ -193,7 +177,13 @@
   flex-wrap: wrap;
 }
 
-.meta-sep { color: #ddd; }
+.meta-company {
+  font-weight: 700;
+  color: #444;
+  text-transform: capitalize;
+}
+
+.meta-sep { color: #c9c9c9; }
 .meta-visa { font-weight: 600; }
 .meta-visa-yes { color: #057642; }
 .meta-visa-no  { color: #c0392b; }
@@ -232,8 +222,8 @@
 
 .tech-label {
   font-size: 10.5px;
-  color: #888;
-  font-weight: 600;
+  color: #444;
+  font-weight: 700;
   margin-right: 2px;
   flex-shrink: 0;
 }

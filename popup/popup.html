@@ -10,22 +10,18 @@
   <link rel="stylesheet" href="styles/modals.css" />
 </head>
 <body>
-  <header>
-    <h1>🔍 LinkedIn Recruiter Finder</h1>
-    <div class="company" id="companyName"></div>
-    <button id="refreshPanelBtn" title="Refresh panel" style="
-      background:none; border:none; color:white; opacity:0.8; cursor:pointer;
-      font-size:15px; padding:2px 4px; margin-left:6px; line-height:1;
-    ">↻</button>
-  </header>
-
   <!-- Tab bar -->
   <div class="tab-bar">
-    <button class="tab-btn active" id="tabSearch">🔍 Search</button>
-    <button class="tab-btn" id="tabBulk">📋 Bulk</button>
-    <button class="tab-btn" id="tabHistory">🕓 History</button>
+    <div class="tab-tabs">
+      <button class="tab-btn active" id="tabSearch">Search</button>
+      <button class="tab-btn" id="tabBulk">Bulk</button>
+      <button class="tab-btn" id="tabHistory">History</button>
+    </div>
+    <div class="tab-context">
+      <button id="refreshPanelBtn" title="Refresh panel">Refresh</button>
+    </div>
   </div>
-
+  <div id="companyName" class="sr-company-name" aria-hidden="true"></div>
   <!-- Search panel -->
   <div class="panel active" id="searchPanel">
     <div id="main">
@@ -33,22 +29,18 @@
       <div id="companyMeta" style="display:none"></div>
       <div id="techStack" style="display:none"></div>
       <div id="progressBar"><div id="progressFill"></div></div>
-      <div class="keywords-row">
-        <span class="kw-chip">technical</span>
-        <span class="kw-chip">recruiter</span>
-        <span class="kw-chip">talent</span>
-        <span class="kw-chip">hiring</span>
-        <span class="kw-chip">coordinator</span>
-      </div>
       <div class="auto-scan-row">
-        <span class="auto-scan-label">
-          ⚡ Auto-scan as I browse
-          <span class="as-status off" id="asStatus">OFF</span>
-        </span>
-        <label class="toggle-switch" title="Automatically scan each company as you click jobs">
-          <input type="checkbox" id="autoScanToggle" />
-          <span class="toggle-slider"></span>
-        </label>
+        <button id="scanBtn">🚀 Find Recruiters</button>
+        <div class="auto-scan-controls">
+          <span class="auto-scan-label">
+            ⚡ Auto-scan as I browse
+            <span class="as-status off" id="asStatus">OFF</span>
+          </span>
+          <label class="toggle-switch" title="Automatically scan each company as you click jobs">
+            <input type="checkbox" id="autoScanToggle" />
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
       </div>
       <div id="queuePanel"></div>
       <div id="profileNotif">
@@ -62,10 +54,7 @@
         <button id="obsDismissBtn" title="Dismiss">✕</button>
       </div>
       <div id="disambigPanel"></div>
-      <div class="scan-info-row">
-        <button id="scanBtn">🚀 Find Recruiters</button>
-        <div id="resultsCompanyBanner" style="display:none"></div>
-      </div>
+      <div id="resultsCompanyBanner" style="display:none"></div>
       <div class="results-search-wrap" id="resultsSearchWrap" style="display:none">
         <input type="text" id="resultsSearch" placeholder="🔍 Filter recruiters..." />
         <button id="clearResultsSearch" title="Clear filter" style="display:none">✕</button>
@@ -235,6 +224,9 @@
   <script src="init.js"></script>
 </body>
 </html>
+
+
+
 
 
 

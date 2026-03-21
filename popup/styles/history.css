@@ -1,4 +1,12 @@
-#historyPanel { padding: 12px; }
+#historyPanel {
+  padding: 12px;
+  flex-direction: column;
+  min-height: 0;
+}
+
+#historyPanel.active {
+  display: flex;
+}
 
 #historySearch {
   width: 100%;
@@ -101,7 +109,12 @@
 }
 #clearHistoryBtn:hover { background: #fdecea; }
 
-#historyList { max-height: 420px; overflow-y: auto; clear: both; }
+#historyList {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  clear: both;
+}
 
 .history-options-wrap {
   position: relative;

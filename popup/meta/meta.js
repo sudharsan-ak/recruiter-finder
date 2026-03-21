@@ -11,6 +11,10 @@ function fmtEmpCount(str) {
 
 function updateCompanyMetaDisplay() {
   const parts = [];
+  const companyName = companyEl?.textContent?.trim();
+  if (companyName) {
+    parts.push(`<span class="meta-company">${companyName}</span>`);
+  }
   if (currentEmployeeCount) {
     parts.push(`<span class="emp-count-chip" title="Click to edit">&#128101; ${currentEmployeeCount}</span>`);
   }
@@ -33,7 +37,7 @@ function updateCompanyMetaDisplay() {
     }
   }
   if (parts.length > 0) {
-    let html = parts.join('<span class="meta-sep"> · </span>');
+    let html = parts.join('<span class="meta-sep"> | </span>');
     if (_onJobPage) html += '<button class="copy-jd-chip" id="copyJdBtn">&#128203; JD</button>';
     companyMetaEl.innerHTML = html;
     companyMetaEl.style.display = 'flex';
@@ -145,5 +149,6 @@ async function getEmployeeCountFromJobPage(tabId, attempt = 0) {
     return null;
   }
 }
+
 
 
