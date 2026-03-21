@@ -281,9 +281,8 @@ mark.hl {
   font-weight: inherit;
 }
 
-.backup-row {
-
 /* History empty state and actions */
+.empty-history {
   text-align: center;
   color: #aaa;
   font-size: 12px;

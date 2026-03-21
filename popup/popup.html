@@ -176,14 +176,26 @@
       <div class="history-options-wrap">
         <button id="historyOptionsBtn">≡ Options</button>
         <div class="history-options-menu" id="historyOptionsMenu">
-          <button id="addRecruiterBtn">➕ Add Recruiter</button>
-          <button id="refreshLogosBtn" title="Fetch missing company logos">🖼 Refresh Logos</button>
-          <button id="updateSlugsBtn" title="Fetch canonical slug for every company and store aliases">🔗 Update Slugs</button>
-          <button id="exportCsvBtn">⬇️ Export to CSV</button>
-          <button id="exportXlsxBtn">⬇️ Export to XLSX</button>
-          <div class="backup-row">
-            <button id="exportBackupBtn">⬇ Export JSON</button>
-            <button id="importBackupBtn">⬆ Import CSV/JSON/XLSX</button>
+          <button id="manageMenuBtn" class="history-menu-top-btn">≡ Manage</button>
+          <div class="history-submenu" id="manageSubmenu">
+            <button id="addRecruiterBtn">➕ Add Recruiter</button>
+            <button id="refreshLogosBtn" title="Fetch missing company logos">🖼 Refresh Logos</button>
+            <button id="updateSlugsBtn" title="Fetch canonical slug for every company and store aliases">🔗 Update Slugs</button>
+          </div>
+          <button id="transferMenuBtn" class="history-menu-top-btn">⇵ Export / Import</button>
+          <div class="history-submenu" id="transferSubmenu">
+            <div class="history-submenu-label">Export</div>
+            <div class="history-submenu-grid">
+              <button id="exportCsvBtn">CSV</button>
+              <button id="exportBackupBtn">JSON</button>
+              <button id="exportXlsxBtn">XLSX</button>
+            </div>
+            <div class="history-submenu-label">Import</div>
+            <div class="history-submenu-grid">
+              <button id="importCsvBtn">CSV</button>
+              <button id="importJsonBtn">JSON</button>
+              <button id="importXlsxBtn">Excel</button>
+            </div>
             <input type="file" id="importFileInput" accept=".json,.csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" style="display:none" />
           </div>
           <button id="clearHistoryBtn">🗑 Clear All</button>
@@ -223,5 +235,7 @@
   <script src="init.js"></script>
 </body>
 </html>
+
+
 
 

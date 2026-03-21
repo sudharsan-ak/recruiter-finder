@@ -255,7 +255,7 @@ async function exportToXlsx() {
   if (keys.length === 0) {
     globalThis.setHistoryActionStatus?.('Nothing to export');
     exportXlsxBtn.textContent = '⚠️ Nothing to export';
-    setTimeout(() => { exportXlsxBtn.textContent = '⬇️ Export to XLSX'; }, 2000);
+    setTimeout(() => { exportXlsxBtn.textContent = 'XLSX'; }, 2000);
     return;
   }
 
@@ -314,7 +314,9 @@ async function exportToXlsx() {
 
   globalThis.setHistoryActionStatus?.('Export XLSX done');
   exportXlsxBtn.textContent = '✅ Exported!';
-  setTimeout(() => { exportXlsxBtn.textContent = '⬇️ Export to XLSX'; }, 2000);
+  setTimeout(() => { exportXlsxBtn.textContent = 'XLSX'; }, 2000);
 }
 
 exportXlsxBtn.addEventListener('click', exportToXlsx);
+
+

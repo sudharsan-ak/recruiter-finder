@@ -20,7 +20,7 @@ async function exportToCSV() {
   if (keys.length === 0) {
     globalThis.setHistoryActionStatus?.('Nothing to export');
     exportCsvBtn.textContent = '⚠️ Nothing to export';
-    setTimeout(() => { exportCsvBtn.textContent = '⬇️ Export to CSV'; }, 2000);
+    setTimeout(() => { exportCsvBtn.textContent = 'CSV'; }, 2000);
     return;
   }
 
@@ -69,7 +69,7 @@ async function exportToCSV() {
 
   globalThis.setHistoryActionStatus?.('Export CSV done');
   exportCsvBtn.textContent = '✅ Exported!';
-  setTimeout(() => { exportCsvBtn.textContent = '⬇️ Export to CSV'; }, 2000);
+  setTimeout(() => { exportCsvBtn.textContent = 'CSV'; }, 2000);
 }
 
 // -Backup export ─────────────────────────────────────────────────────────────
@@ -87,7 +87,7 @@ async function exportBackup() {
   URL.revokeObjectURL(url);
   globalThis.setHistoryActionStatus?.('Export backup done');
   exportBackupBtn.textContent = '✅ Exported!';
-  setTimeout(() => { exportBackupBtn.textContent = '⬇ Export Backup'; }, 2000);
+  setTimeout(() => { exportBackupBtn.textContent = 'JSON'; }, 2000);
 }
 
 function parseCSV(text) {
@@ -212,7 +212,7 @@ async function importJsonBackup(text) {
       displayName: entry.displayName || existing.displayName || slug.replace(/-/g, ' '),
       logoUrl: entry.logoUrl ?? existing.logoUrl ?? null,
       employeeCount: entry.employeeCount ?? existing.employeeCount,
-      scannedAt: Math.max(existing.scannedAt || 0, entry.scannedAt || 0, Date.now()),
+      scannedAt: Math.max(existing.scannedAt || 0, entry.scannedAt || 0) || Date.now(),
     };
   }
 
@@ -323,6 +323,12 @@ async function importBackup(file) {
   try {
     const isXlsx = /\.xlsx$/i.test(file.name) || /spreadsheetml\.sheet/i.test(file.type);
     const isCsv = /\.csv$/i.test(file.name) || /^text\/csv/i.test(file.type);
+    const sourceBtn = importFileInput.dataset.sourceBtn || '';
+    const activeBtn =
+      sourceBtn === 'importCsvBtn' ? importCsvBtn :
+      sourceBtn === 'importJsonBtn' ? importJsonBtn :
+      sourceBtn === 'importXlsxBtn' ? importXlsxBtn :
+      null;
     const result = isXlsx
       ? await importXlsxFile(file)
       : isCsv
@@ -332,24 +338,56 @@ async function importBackup(file) {
     if (result.mode === 'table') {
       const label = isXlsx ? 'XLSX' : 'CSV';
       globalThis.setHistoryActionStatus?.(`${label} import done: ${result.recruiterCount} recruiters`);
-      importBackupBtn.textContent = `✅ Imported ${result.recruiterCount} recruiter${result.recruiterCount === 1 ? '' : 's'}`;
+      if (activeBtn) activeBtn.textContent = '? Imported!';
     } else {
       globalThis.setHistoryActionStatus?.(`Import done: ${result.companyCount} companies`);
-      importBackupBtn.textContent = `✅ Imported ${result.companyCount} companies`;
+      if (activeBtn) activeBtn.textContent = '? Imported!';
     }
-    setTimeout(() => { importBackupBtn.textContent = '⬆ Import CSV/JSON/XLSX'; }, 3000);
+    setTimeout(() => {
+      if (activeBtn === importCsvBtn) activeBtn.textContent = 'CSV';
+      if (activeBtn === importJsonBtn) activeBtn.textContent = 'JSON';
+      if (activeBtn === importXlsxBtn) activeBtn.textContent = 'Excel';
+    }, 2000);
     renderHistory(historySearch.value);
   } catch {
     globalThis.setHistoryActionStatus?.('Import failed');
-    importBackupBtn.textContent = '❌ Invalid file';
-    setTimeout(() => { importBackupBtn.textContent = '⬆ Import CSV/JSON/XLSX'; }, 2500);
+    const sourceBtn = importFileInput.dataset.sourceBtn || '';
+    const activeBtn =
+      sourceBtn === 'importCsvBtn' ? importCsvBtn :
+      sourceBtn === 'importJsonBtn' ? importJsonBtn :
+      sourceBtn === 'importXlsxBtn' ? importXlsxBtn :
+      null;
+    if (activeBtn) activeBtn.textContent = '? Invalid';
+    setTimeout(() => {
+      if (activeBtn === importCsvBtn) activeBtn.textContent = 'CSV';
+      if (activeBtn === importJsonBtn) activeBtn.textContent = 'JSON';
+      if (activeBtn === importXlsxBtn) activeBtn.textContent = 'Excel';
+    }, 2000);
+  } finally {
+    delete importFileInput.dataset.sourceBtn;
   }
 }
 
 exportCsvBtn.addEventListener('click', exportToCSV);
 exportBackupBtn.addEventListener('click', exportBackup);
-importBackupBtn.addEventListener('click', () => importFileInput.click());
+importCsvBtn.addEventListener('click', () => {
+  importFileInput.accept = '.csv,text/csv';
+  importFileInput.dataset.sourceBtn = 'importCsvBtn';
+  importFileInput.click();
+});
+importJsonBtn.addEventListener('click', () => {
+  importFileInput.accept = '.json,application/json';
+  importFileInput.dataset.sourceBtn = 'importJsonBtn';
+  importFileInput.click();
+});
+importXlsxBtn.addEventListener('click', () => {
+  importFileInput.accept = '.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+  importFileInput.dataset.sourceBtn = 'importXlsxBtn';
+  importFileInput.click();
+});
 importFileInput.addEventListener('change', e => {
   const file = e.target.files[0];
   if (file) { importBackup(file); importFileInput.value = ''; }
 });
+
+
