@@ -233,9 +233,12 @@ async function handleExternalPage(tab) {
   if (!companyName) companyName = await extractCompanyNameFromPage(tab.id);
 
   if (!companyName) {
-    statusBox.textContent = 'Could not detect company. Are you on a job posting page?';
+    detectedExternalCompanyName = '';
+    companyEl.textContent = '';
+    setExternalCompanyEdit(true);
+    statusBox.textContent = 'Could not detect company automatically. Enter a company name and click "Scan".';
     scanBtn.disabled = false;
-    scanBtn.textContent = 'Find Recruiters';
+    scanBtn.textContent = 'Scan';
     return;
   }
 

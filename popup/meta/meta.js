@@ -13,12 +13,10 @@ function fmtEmpCount(str) {
 function updateCompanyMetaDisplay() {
   const parts = [];
   const companyName = companyEl?.textContent?.trim();
-  if (companyName) {
-    if (externalCompanyEditEnabled) {
-      parts.push(`<input type="text" class="meta-company-input" value="${companyName.replace(/"/g, '&quot;')}" />`);
-    } else {
-      parts.push(`<span class="meta-company">${companyName}</span>`);
-    }
+  if (externalCompanyEditEnabled) {
+    parts.push(`<input type="text" class="meta-company-input" value="${(companyName || '').replace(/"/g, '&quot;')}" placeholder="Enter company..." />`);
+  } else if (companyName) {
+    parts.push(`<span class="meta-company">${companyName}</span>`);
   }
   if (currentEmployeeCount) {
     parts.push(`<span class="emp-count-chip" title="Click to edit">&#128101; ${currentEmployeeCount}</span>`);
