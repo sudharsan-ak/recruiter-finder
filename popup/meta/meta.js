@@ -41,11 +41,12 @@ function updateCompanyMetaDisplay() {
   }
   if (parts.length > 0) {
     let html = parts.join('<span class="meta-sep"> | </span>');
-    if (_onJobPage) html += '<button class="copy-jd-chip" id="copyJdBtn">&#128203; JD</button>';
+    if (_onJobPage) html += '<button class="copy-jd-chip" id="copyJdBtn">&#128203; JD</button><button class="copy-jd-chip" id="openJobBtn">&#8599; Open</button>';
     companyMetaEl.innerHTML = html;
     companyMetaEl.style.display = 'flex';
     if (_onJobPage) {
       document.getElementById('copyJdBtn').addEventListener('click', handleCopyJd);
+      document.getElementById('openJobBtn').addEventListener('click', handleOpenJob);
     }
 
     const companyInput = companyMetaEl.querySelector('.meta-company-input');
@@ -125,7 +126,7 @@ async function getEmployeeCountFromJobPage(tabId, attempt = 0) {
     const res = await chrome.scripting.executeScript({
       target: { tabId },
       func: () => {
-        const pattern = /(\d[\d,]*(?:[-–]\d[\d,]*|\+)\s*employees)/i;
+        const pattern = /(\d[\d,]*(?:[-ï¿½]\d[\d,]*|\+)\s*employees)/i;
         const pathname = location.pathname || '';
 
         if (/^\/company\/[^/?#]+\/?$/.test(pathname)) {

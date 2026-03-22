@@ -163,6 +163,24 @@ async function handleCopyJd() {
     setTimeout(() => { btn.innerHTML = '&#128203; JD'; }, 2000);
   });
 }
+async function handleOpenJob() {
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  const url = tab?.url || '';
+  let targetUrl = '';
+
+  const directMatch = url.match(/linkedin\.com\/jobs\/view\/(\d+)/);
+  if (directMatch) {
+    targetUrl = `https://www.linkedin.com/jobs/view/${directMatch[1]}/`;
+  } else {
+    const currentJobIdMatch = url.match(/[?&]currentJobId=(\d+)/);
+    if (currentJobIdMatch) {
+      targetUrl = `https://www.linkedin.com/jobs/view/${currentJobIdMatch[1]}/`;
+    }
+  }
+
+  if (!targetUrl) return;
+  chrome.tabs.create({ url: targetUrl }).catch(() => {});
+}
 
 async function getExperienceFromJobPage(tabId) {
   try {
@@ -264,3 +282,4 @@ async function getVisaSponsorshipFromJobPage(tabId) {
     return 'na';
   }
 }
+
