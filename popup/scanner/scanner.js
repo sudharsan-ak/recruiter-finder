@@ -113,11 +113,36 @@ function pollForManualScanCompletion(slug) {
 // -Scan button ───────────────────────────────────────────────────────────────
 scanBtn.addEventListener('click', async () => {
   const isRescan = scanBtn.textContent.includes('Re-scan');
+  const normalizeManualSlug = value => String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/&/g, ' and ')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
 
   errorDiv.style.display = 'none';
   errorDiv.style.color = '#c0392b';
 
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+
+  if (tab?.url?.match(/linkedin\.com\/in\/[^/?#]+/) && _profileRecruiter?.mode === 'manual_check') {
+    await globalThis.handleManualProfileCacheCheck?.();
+    return;
+  }
+
+  let manualProfileSlug = null;
+  if (tab?.url?.match(/linkedin\.com\/in\/[^/?#]+/) && _profileRecruiter?.mode === 'manual_scan_slug') {
+    const inlineCompanyInput = document.querySelector('.profile-inline-company-input');
+    manualProfileSlug = normalizeManualSlug(inlineCompanyInput?.value || _profileRecruiter.overrideSlug || _profileRecruiter.companySlug || companyEl.textContent || '');
+    if (!manualProfileSlug) {
+      statusBox.textContent = 'Enter a company slug to scan.';
+      return;
+    }
+    _profileRecruiter.overrideSlug = manualProfileSlug;
+    _profileRecruiter.companySlug = manualProfileSlug;
+    companyEl.textContent = manualProfileSlug;
+    hideProfileNotif();
+  }
 
   if (tab?.url?.match(/linkedin\.com\/in\/[^/?#]+/) && _profileRecruiter?.mode === 'new') {
     const inlineCompanyInput = document.querySelector('.profile-inline-company-input');
@@ -127,7 +152,7 @@ scanBtn.addEventListener('click', async () => {
     return;
   }
 
-  let slug = extractCompanySlug(tab);
+  let slug = manualProfileSlug || extractCompanySlug(tab);
   if (!slug) {
     statusBox.textContent = 'Detecting company from job posting...';
     slug = await getCompanySlugFromJobPage(tab.id);
