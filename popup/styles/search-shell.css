@@ -123,7 +123,7 @@ body {
   background: #0a66c2;
   color: white;
   border: none;
-  padding: 7px 16px;
+  padding: 3px 6px;
   border-radius: 20px;
   font-size: 12px;
   font-weight: 600;
@@ -160,8 +160,78 @@ body {
   justify-content: space-between;
   margin-bottom: 8px;
   padding: 4px 0;
-  gap: 10px;
+  gap: 6px;
 }
+
+#emailCheckInput {
+  flex: 1;
+  min-width: 0;
+  padding: 4px 9px;
+  font-size: 11px;
+  border: 1.5px solid #ddd;
+  border-radius: 10px;
+  outline: none;
+  font-family: inherit;
+  color: #1d1d1d;
+  background: #fff;
+}
+#emailCheckInput:focus { border-color: #0a66c2; }
+#emailCheckInput::placeholder { color: #bbb; }
+
+#emailCheckBtn {
+  flex-shrink: 0;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  background: #0a66c2;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  line-height: 1.4;
+}
+#emailCheckBtn:hover { background: #084e96; }
+
+#emailNotif {
+  display: none;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  padding: 5px 8px;
+  border-radius: 8px;
+  margin-bottom: 6px;
+  flex-wrap: wrap;
+}
+#emailNotif.email-notif-error  { background: #fdecea; color: #c0392b; }
+#emailNotif.email-notif-ok     { background: #e6f4ea; color: #1e6b3a; }
+#emailNotif.email-notif-prompt { background: #e8f0fe; color: #1d1d1d; }
+
+.email-notif-msg { flex: 1; min-width: 0; }
+
+.email-notif-confirm {
+  flex-shrink: 0;
+  padding: 2px 10px;
+  font-size: 10.5px;
+  font-weight: 600;
+  background: #0a66c2;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.email-notif-confirm:hover { background: #084e96; }
+
+.email-notif-skip {
+  flex-shrink: 0;
+  padding: 2px 8px;
+  font-size: 10.5px;
+  background: none;
+  color: #888;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.email-notif-skip:hover { color: #c0392b; border-color: #c0392b; background: #fdecea; }
 
 .auto-scan-controls {
   display: flex;

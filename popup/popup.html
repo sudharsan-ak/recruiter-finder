@@ -31,9 +31,11 @@
       <div id="progressBar"><div id="progressFill"></div></div>
       <div class="auto-scan-row">
         <button id="scanBtn">🚀 Find Recruiters</button>
+        <input type="text" id="emailCheckInput" placeholder="Paste email…" autocomplete="off" />
+        <button id="emailCheckBtn" title="Save email to matched recruiter">✓</button>
         <div class="auto-scan-controls">
           <span class="auto-scan-label">
-            ⚡ Auto-scan as I browse
+            ⚡Auto-scan
             <span class="as-status off" id="asStatus">OFF</span>
           </span>
           <label class="toggle-switch" title="Automatically scan each company as you click jobs">
@@ -42,6 +44,7 @@
           </label>
         </div>
       </div>
+      <div id="emailNotif"></div>
       <div id="queuePanel"></div>
       <div id="profileNotif">
         <div id="profileNotifBody">
@@ -227,6 +230,7 @@
   <script src="history/history-render.js"></script>
   <script src="bulk/bulk.js"></script>
   <script src="scanner/scanner.js"></script>
+  <script src="search/email-check.js"></script>
   <script src="search/panel-init.js"></script>
   <script src="init.js"></script>
 </body>
