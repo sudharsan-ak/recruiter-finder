@@ -91,7 +91,23 @@
   padding: 4px 0 2px;
 }
 .copy-selected-row.visible { display: flex; }
-.copy-selected-row .copy-selected-btn { flex: 1; font-size: 11px; padding: 5px 10px; }
+.copy-selected-row .copy-selected-btn,
+.copy-selected-row .copy-selected-emails-btn {
+  font-size: 11px;
+  padding: 5px 10px;
+  white-space: nowrap;
+}
+.copy-selected-emails-btn {
+  color: #0a66c2;
+  border-color: #0a66c2;
+  background: #fff;
+  font-weight: 600;
+}
+.copy-selected-emails-btn:hover {
+  background: #e8f0fe;
+  border-color: #0a66c2;
+  color: #0a66c2;
+}
 .clear-selection-btn {
   font-size: 11px; padding: 5px 10px; white-space: nowrap;
   color: #888; border-color: #ccc;

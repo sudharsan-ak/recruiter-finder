@@ -75,6 +75,10 @@ async function renderHistory(filter = '') {
     });
     const recruiters  = entry.recruiters;
     const copyText    = recruiters.map(r => r.url).join('\n');
+    const copyEmailText = recruiters
+      .map(r => (r.email || '').trim().toLowerCase())
+      .filter(Boolean)
+      .join('\n');
 
     const rows = recruiters.length > 0
       ? recruiters.map(r => {
@@ -136,8 +140,10 @@ async function renderHistory(filter = '') {
           ${recruiters.length > 0
             ? `<div class="history-company-actions">
                 <button class="copy-history-selected-btn" data-slug="${slug}" style="display:none">📋 Copy Selected</button>
+                <button class="copy-history-selected-emails-btn" data-slug="${slug}" style="display:none">✉ Copy Emails</button>
                 <button class="clear-history-selected-btn" data-slug="${slug}" style="display:none">✕ Clear</button>
                 <button class="copy-history-btn" data-copy="${encodeURIComponent(copyText)}">📋 Copy All</button>
+                <button class="copy-history-emails-btn" data-copy="${encodeURIComponent(copyEmailText)}">✉ Copy All Emails</button>
                 <button class="open-history-btn" data-slug="${slug}">↗ Open All</button>
                </div>`
             : ''}
@@ -197,8 +203,10 @@ async function renderHistory(filter = '') {
     historyList.querySelectorAll('.history-company').forEach(card => {
       const companyChecked = card.querySelectorAll('.h-check:checked');
       const copyBtn = card.querySelector('.copy-history-selected-btn');
+      const copyEmailsBtn = card.querySelector('.copy-history-selected-emails-btn');
       const clearBtn = card.querySelector('.clear-history-selected-btn');
       if (copyBtn) copyBtn.style.display = companyChecked.length > 0 ? '' : 'none';
+      if (copyEmailsBtn) copyEmailsBtn.style.display = companyChecked.length > 0 ? '' : 'none';
       if (clearBtn) clearBtn.style.display = companyChecked.length > 0 ? '' : 'none';
     });
   }
@@ -211,6 +219,19 @@ async function renderHistory(filter = '') {
     const urls = [...historyList.querySelectorAll('.h-check:checked')].map(cb => cb.dataset.url);
     navigator.clipboard.writeText(urls.join('\n')).then(() => {
       const btn = document.getElementById('histCopySelected');
+      const orig = btn.textContent;
+      btn.textContent = '✅ Copied!';
+      setTimeout(() => { btn.textContent = orig; }, 1500);
+    });
+  });
+
+  document.getElementById('histCopySelectedEmails')?.addEventListener('click', () => {
+    const emails = [...historyList.querySelectorAll('.h-check:checked')]
+      .map(cb => cb.closest('.history-recruiter-row')?.querySelector('.h-copy-email')?.dataset.email || '')
+      .filter(Boolean);
+    if (!emails.length) return;
+    navigator.clipboard.writeText(emails.join('\n')).then(() => {
+      const btn = document.getElementById('histCopySelectedEmails');
       const orig = btn.textContent;
       btn.textContent = '✅ Copied!';
       setTimeout(() => { btn.textContent = orig; }, 1500);
@@ -303,6 +324,38 @@ async function renderHistory(filter = '') {
           e2.preventDefault();
           restoreButton();
         }
+      });
+    });
+  });
+
+  document.querySelectorAll('.copy-history-selected-emails-btn').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const slug = btn.dataset.slug;
+      const emails = [...historyList.querySelectorAll(`#hist-${slug} .h-check:checked`)]
+        .map(cb => cb.closest('.history-recruiter-row')?.querySelector('.h-copy-email')?.dataset.email || '')
+        .filter(Boolean);
+      if (!emails.length) return;
+      navigator.clipboard.writeText(emails.join('\n')).then(() => {
+        const orig = btn.textContent;
+        btn.textContent = '✅ Copied!';
+        setTimeout(() => { btn.textContent = orig; }, 1500);
+      });
+    });
+  });
+
+  document.querySelectorAll('.copy-history-emails-btn').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const emails = decodeURIComponent(btn.dataset.copy || '')
+        .split('\n')
+        .map(v => v.trim())
+        .filter(Boolean);
+      if (!emails.length) return;
+      navigator.clipboard.writeText(emails.join('\n')).then(() => {
+        const orig = btn.textContent;
+        btn.textContent = '✅ Copied!';
+        setTimeout(() => { btn.textContent = orig; }, 1500);
       });
     });
   });
@@ -464,3 +517,4 @@ clearHistBtn.addEventListener('click', async () => {
   globalThis.setHistoryActionStatus?.('History cleared');
   renderHistory();
 });
+

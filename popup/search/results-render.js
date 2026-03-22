@@ -62,13 +62,15 @@ async function renderResults(data, passedLogoUrl = null) {
   let html = `<div class="collapse-controls">
     <div class="collapse-btns">
       <button class="ctrl-btn" id="expandAllSections">▾ Expand All</button>
-      <button class="ctrl-btn" id="collapseAllSections">▸ Collapse All</button>
-      <button class="ctrl-btn open-all-btn" id="openAllRecruiters">↗ Open All</button>
-      <button class="ctrl-btn" id="copyAllLinks">📋 Copy All</button>
+      <button class="ctrl-btn" id="collapseAllSections">▸Collapse All</button>
+      <button class="ctrl-btn open-all-btn" id="openAllRecruiters">↗Open All</button>
+      <button class="ctrl-btn" id="copyAllLinks">📋Copy All</button>
+      <button class="ctrl-btn" id="copyAllEmails">✉ Copy All Emails</button>
     </div>
   </div>
   <div class="copy-selected-row" id="copySelectedRow">
-    <button class="ctrl-btn copy-selected-btn" id="copySelectedBtn">📋 Copy Selected (<span id="copySelectedCount">0</span>)</button>
+    <button class="ctrl-btn copy-selected-btn" id="copySelectedBtn">📋Copy Selected (<span id="copySelectedCount">0</span>)</button>
+    <button class="ctrl-btn copy-selected-emails-btn" id="copySelectedEmailsBtn">✉ Copy Emails</button>
     <button class="ctrl-btn clear-selection-btn" id="clearSelectionBtn">✕ Clear Selection</button>
   </div>`;
   let copyText = '';
@@ -180,6 +182,19 @@ async function renderResults(data, passedLogoUrl = null) {
     const urls = [...resultsDiv.querySelectorAll('.card[data-url]')].map(c => c.dataset.url);
     navigator.clipboard.writeText(urls.join('\n')).then(() => {
       const btn = document.getElementById('copyAllLinks');
+      const orig = btn.textContent;
+      btn.textContent = '✅ Copied!';
+      setTimeout(() => { btn.textContent = orig; }, 1500);
+    });
+  });
+
+  document.getElementById('copyAllEmails')?.addEventListener('click', () => {
+    const emails = [...resultsDiv.querySelectorAll('.card-email-btn')]
+      .map(btn => btn.dataset.email || '')
+      .filter(Boolean);
+    if (!emails.length) return;
+    navigator.clipboard.writeText(emails.join('\n')).then(() => {
+      const btn = document.getElementById('copyAllEmails');
       const orig = btn.textContent;
       btn.textContent = '✅ Copied!';
       setTimeout(() => { btn.textContent = orig; }, 1500);
@@ -307,6 +322,19 @@ async function renderResults(data, passedLogoUrl = null) {
     btn.addEventListener('click', e => {
       e.stopPropagation();
       copyLink(btn.dataset.email, btn, 'Copy Email');
+    });
+  });
+
+  document.getElementById('copySelectedEmailsBtn')?.addEventListener('click', () => {
+    const emails = [...resultsDiv.querySelectorAll('.recruiter-check:checked')]
+      .map(cb => cb.closest('.card')?.querySelector('.card-email-btn')?.dataset.email || '')
+      .filter(Boolean);
+    if (!emails.length) return;
+    navigator.clipboard.writeText(emails.join('\n')).then(() => {
+      const btn = document.getElementById('copySelectedEmailsBtn');
+      const orig = btn.textContent;
+      btn.textContent = '✅ Copied!';
+      setTimeout(() => { btn.textContent = orig; }, 1500);
     });
   });
   resultsDiv.querySelectorAll('.card-remove-btn').forEach(btn => {
