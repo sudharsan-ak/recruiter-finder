@@ -84,13 +84,16 @@ async function renderResults(data, passedLogoUrl = null) {
       const badgeHtml = badge ? `<span class="badge ${badge}">${badgeText}</span>` : '';
       const photoHtml = r.photoUrl ? `<img class="recruiter-photo" src="${r.photoUrl}" alt="" />` : '';
       const photoClass = r.photoUrl ? 'has-photo' : '';
+      const emailHtml = r.email ? `<span class="card-email">(${r.email})</span>` : '';
+      const copyEmailBtn = r.email ? `<button class="card-email-btn" data-email="${r.email}">Copy Email</button>` : '';
       html += `
         <div class="card ${cls} ${photoClass}" data-url="${r.url}" data-name="${r.name}" data-title="${r.title || ''}">
           ${photoHtml}
-          <div class="card-name-row"><input type="checkbox" class="recruiter-check" /><div class="card-name">${r.name}${badgeHtml}</div></div>
+          <div class="card-name-row"><input type="checkbox" class="recruiter-check" /><div class="card-name">${r.name}${emailHtml}${badgeHtml}</div></div>
           <div class="card-title" title="${r.title}">${r.title || '—'}</div>
           <div class="card-url"><a href="${r.url}" target="_blank">${r.url}</a></div>
           <button class="card-copy-btn" data-url="${r.url}">🔗 Copy Link</button>
+          ${copyEmailBtn}
           <button class="card-remove-btn" data-url="${r.url}">✕ Remove</button>
         </div>`;
       copyText += `${r.name}\n${r.title}\n${r.url}\n\n`;
@@ -299,6 +302,13 @@ async function renderResults(data, passedLogoUrl = null) {
     });
   });
 
+
+  resultsDiv.querySelectorAll('.card-email-btn').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      copyLink(btn.dataset.email, btn, 'Copy Email');
+    });
+  });
   resultsDiv.querySelectorAll('.card-remove-btn').forEach(btn => {
     btn.addEventListener('click', async e => {
       e.stopPropagation();
