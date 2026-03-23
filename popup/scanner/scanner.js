@@ -152,22 +152,24 @@ scanBtn.addEventListener('click', async () => {
     return;
   }
 
-  let slug = manualProfileSlug || extractCompanySlug(tab);
-  if (!slug) {
-    statusBox.textContent = 'Detecting company from job posting...';
-    slug = await getCompanySlugFromJobPage(tab.id);
-  }
+  let slug = manualProfileSlug;
 
-  // -Non-LinkedIn page handling ──────────────────────────────────────────────
+  // Non-LinkedIn page handling
   if (!tab.url?.includes('linkedin.com')) {
-    if (currentSlug) {
-      // Already resolved via disambiguation — use it (covers re-scan)
+    if (isRescan && currentSlug) {
       slug = currentSlug;
     } else {
-      // Slug not resolved yet — run LinkedIn search + disambiguation flow
       await performExternalSearch(companyEl.textContent.trim(), 'Scan');
       return;
     }
+  }
+
+  if (!slug) {
+    slug = extractCompanySlug(tab);
+  }
+  if (!slug) {
+    statusBox.textContent = 'Detecting company from job posting...';
+    slug = await getCompanySlugFromJobPage(tab.id);
   }
 
   if (!slug) {

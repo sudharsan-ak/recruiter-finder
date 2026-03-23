@@ -3,11 +3,13 @@ let _lastPeopleUrl = '';
 let _peopleRequestTimer = null;
 let _lastCompanyPageSlug = '';
 let _lastTabUrl = '';
+let _lastTabId = null;
 
 setInterval(async () => {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
-  if (tab?.url && tab.url !== _lastTabUrl) {
+  if (tab?.id !== _lastTabId || (tab?.url && tab.url !== _lastTabUrl)) {
+    _lastTabId = tab?.id ?? null;
     _lastTabUrl = tab.url;
     initPanel();
     return;
@@ -74,6 +76,26 @@ async function initPanel() {
       companyEl.textContent = '';
       resetSearchCompanyState();
       statusBox.textContent = 'Ready! Open a LinkedIn page or supported job posting to use the extension.';
+      return;
+    }
+    if (/^(chrome|chrome-extension|edge|about):/i.test(url)) {
+      currentSlug = null;
+      companyEl.textContent = '';
+      _onJobPage = false;
+      currentEmployeeCount = null;
+      currentVisaStatus = null;
+      currentExperience = null;
+      currentTechStack = null;
+      setExternalCompanyEdit(true);
+      statusBox.textContent = 'Enter a company name and click "Scan".';
+      scanBtn.disabled = false;
+      scanBtn.textContent = 'Scan';
+      errorDiv.style.display = 'none';
+      progressBar.style.display = 'none';
+      progressFill.style.width = '0%';
+      resultsDiv.innerHTML = '';
+      resultsCompanyBanner.style.display = 'none';
+      if (copyBtn) copyBtn.style.display = 'none';
       return;
     }
     handleExternalPage(tab);
@@ -149,6 +171,8 @@ async function initPanel() {
     errorDiv.textContent = 'Showing cached results. Click "Re-scan" to fetch fresh data.';
   } else {
     statusBox.textContent = `Ready! Click "Find Recruiters" to scan ${slug.replace(/-/g, ' ')}.`;
+    scanBtn.disabled = false;
+    scanBtn.textContent = 'Find Recruiters';
   }
 
   getEmployeeCountFromJobPage(tab.id).then(async count => {

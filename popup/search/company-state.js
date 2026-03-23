@@ -31,6 +31,7 @@ function resetSearchCompanyState() {
   progressFill.style.width = '0%';
   currentVisaStatus = null;
   currentExperience = null;
+  setExternalCompanyEdit(false);
   showCompanyMeta(null);
   showTechStack([]);
 }
@@ -38,8 +39,30 @@ function resetSearchCompanyState() {
 async function onCompanyChange(slug) {
   if (!slug || slug === currentSlug) return;
 
+  const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+
   if (isScanning) {
+    currentSlug = slug;
+    _onJobPage = !!activeTab?.url && (/linkedin\.com\/jobs\/view\/\d+/.test(activeTab.url) || /[?&]currentJobId=\d+/.test(activeTab.url));
     companyEl.textContent = slug.replace(/-/g, ' ');
+    currentEmployeeCount = null;
+    currentVisaStatus = null;
+    currentExperience = null;
+    showCompanyMeta(null);
+    showTechStack([]);
+
+    if (activeTab) {
+      getEmployeeCountFromJobPage(activeTab.id).then(async count => {
+        const cache = await getCache();
+        const existing = cache[slug]?.employeeCount;
+        showCompanyMeta(existing || count);
+        if (count && !existing) updateCachedEmployeeCount(slug, count);
+      });
+      getVisaSponsorshipFromJobPage(activeTab.id).then(status => showVisaMeta(status));
+      getTechStackFromJobPage(activeTab.id).then(stack => showTechStack(stack));
+      getExperienceFromJobPage(activeTab.id).then(exp => showExperienceMeta(exp));
+    }
+
     const cachedDuringScan = await getCached(slug);
     if (cachedDuringScan) {
       const age = Math.round((Date.now() - cachedDuringScan.scannedAt) / 60000);
@@ -86,7 +109,6 @@ async function onCompanyChange(slug) {
     scanBtn.textContent = '🚀 Find Recruiters';
   }
 
-  const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
   if (activeTab) {
     getEmployeeCountFromJobPage(activeTab.id).then(async count => {
       const cache = await getCache();
