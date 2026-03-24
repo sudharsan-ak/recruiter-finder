@@ -174,3 +174,22 @@ Displays below the scan button for the current job:
 
 MIT
 
+
+## Local JD Writer Helper
+
+If you want the **JD** button to do more than copy to clipboard, you can run a small local helper that listens on `http://127.0.0.1:4545/jd` and writes each copied job description to a text file.
+
+How it works:
+- clicking **JD** still copies the job description to your clipboard
+- if the local helper is running, the extension also POSTs the same JD payload to your machine
+- the bundled helper script is `tools/jd-writer-server.js`
+
+Example:
+```bash
+node tools/jd-writer-server.js "/path/to/JD Text.txt" 4545
+```
+
+Behavior:
+- if the target file is empty, it writes the JD directly
+- if the target file already has content, it appends a newline and then the new JD text
+- if the helper is not running, normal clipboard copy still works

@@ -1,3 +1,24 @@
+const JD_WRITE_ENDPOINT = 'http://127.0.0.1:4545/jd';
+const JD_WRITE_TIMEOUT_MS = 3000;
+
+async function writeJdToLocalHelper(payload) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), JD_WRITE_TIMEOUT_MS);
+  try {
+    const response = await fetch(JD_WRITE_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+    });
+    return response.ok;
+  } catch {
+    return false;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 async function getJobDetailsFromPage(tabId, tabUrl) {
   try {
     const res = await chrome.scripting.executeScript({
@@ -155,14 +176,36 @@ async function handleCopyJd() {
     jd,
   ].join('\n');
 
-  navigator.clipboard.writeText(text).then(() => {
+  const payload = {
+    company,
+    role: role || 'Unknown Role',
+    jd,
+    text,
+    sourceUrl: tab.url || '',
+    capturedAt: new Date().toISOString(),
+  };
+
+  const [clipboardResult, helperResult] = await Promise.allSettled([
+    navigator.clipboard.writeText(text),
+    writeJdToLocalHelper(payload),
+  ]);
+
+  const copied = clipboardResult.status === 'fulfilled';
+  const helperSaved = helperResult.status === 'fulfilled' && helperResult.value === true;
+
+  if (copied && helperSaved) {
+    btn.textContent = 'Copied + Saved';
+  } else if (copied) {
     btn.textContent = 'Copied!';
-    setTimeout(() => { btn.innerHTML = '&#128203; JD'; }, 2000);
-  }).catch(() => {
+  } else if (helperSaved) {
+    btn.textContent = 'Saved';
+  } else {
     btn.textContent = 'Failed';
-    setTimeout(() => { btn.innerHTML = '&#128203; JD'; }, 2000);
-  });
+  }
+
+  setTimeout(() => { btn.innerHTML = '&#128203; JD'; }, 2000);
 }
+
 async function handleOpenJob() {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   const url = tab?.url || '';
