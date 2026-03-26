@@ -88,6 +88,17 @@
 
 .rename-company-btn:hover { opacity: 1; background: #e8f0fe; }
 
+.company-li-link {
+  font-size: 11px;
+  color: #0a66c2;
+  text-decoration: none;
+  opacity: 0.5;
+  flex-shrink: 0;
+  line-height: 1;
+  transition: opacity 0.15s;
+}
+.company-li-link:hover { opacity: 1; }
+
 .rename-input {
   font-size: 13px;
   font-weight: 700;

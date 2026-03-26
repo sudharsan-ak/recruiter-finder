@@ -122,6 +122,7 @@ async function renderHistory(filter = '') {
             <div class="history-company-name" id="hn-${slug}">${hl(displayName, lf)}</div>
             ${entry.employeeCount ? `<span class="history-emp-count">(${fmtEmpCount(entry.employeeCount)})</span>` : ''}
             <button class="rename-company-btn" data-slug="${slug}" title="Rename company">✏️</button>
+            <a class="company-li-link" href="https://www.linkedin.com/company/${slug}/" target="_blank" title="View on LinkedIn">↗</a>
           </div>
           <div class="history-meta">${recruiters.length} recruiters<br>${dateStr}</div>
           <button class="delete-entry-btn" data-slug="${slug}" title="Delete this entry">🗑</button>

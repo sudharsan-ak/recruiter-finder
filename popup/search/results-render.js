@@ -23,7 +23,7 @@ async function renderResults(data, passedLogoUrl = null) {
       ? `<img class="rcb-logo" src="${logoUrl}" alt="" /><div class="rcb-logo-fallback" style="display:none">${initials}</div>`
       : `<div class="rcb-logo-fallback">${initials}</div>`;
     const empHtml = currentEmployeeCount ? `<span class="rcb-emp">👥 ${currentEmployeeCount}</span>` : '';
-    resultsCompanyBanner.innerHTML = `${logoHtml}<span class="rcb-name" id="activeCompanyName">${displayName}</span><button class="rename-company-btn" id="activeCompanyRenameBtn" title="Rename company">✏️</button><span class="rcb-count">${data?.length ?? 0} recruiters</span>${empHtml}`;
+    resultsCompanyBanner.innerHTML = `${logoHtml}<span class="rcb-name" id="activeCompanyName">${displayName}</span><button class="rename-company-btn" id="activeCompanyRenameBtn" title="Rename company">✏️</button><a class="company-li-link" href="https://www.linkedin.com/company/${currentSlug}/" target="_blank" title="View on LinkedIn">↗</a><span class="rcb-count">${data?.length ?? 0} recruiters</span>${empHtml}`;
     resultsCompanyBanner.style.display = 'flex';
   } else {
     resultsCompanyBanner.style.display = 'none';

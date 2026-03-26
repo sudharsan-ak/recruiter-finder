@@ -391,6 +391,7 @@
   font-size: 11px;
   color: #888;
   white-space: nowrap;
+  margin-left: auto;
 }
 
 #resultsCompanyBanner .rcb-emp {
