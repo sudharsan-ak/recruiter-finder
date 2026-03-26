@@ -117,10 +117,30 @@
     return finalEntry;
   };
 
-  helpers.getProfilePhotoUrl = function getProfilePhotoUrl() {
+  helpers.getProfilePhotoUrl = function getProfilePhotoUrl(name) {
+    // 1. Best: LinkedIn wraps the profile photo in a container with aria-label="Profile photo"
+    const byAriaContainer = document.querySelector('[aria-label="Profile photo"] img[src*="media.licdn.com"]')
+      || document.querySelector('[aria-label="Profile photo"] img[data-delayed-url*="media.licdn.com"]');
+    if (byAriaContainer) {
+      const s = byAriaContainer.src || byAriaContainer.getAttribute('data-delayed-url') || '';
+      if (/^https?:\/\//i.test(s)) return s;
+    }
+    // 2. Try matching by name in alt attribute (some LinkedIn layouts set this)
+    if (name) {
+      const escaped = name.replace(/"/g, '\\"');
+      const byName = document.querySelector(`img[alt="${escaped}"][src*="media.licdn.com"]`)
+        || document.querySelector(`img[alt="${escaped}"][data-delayed-url*="media.licdn.com"]`);
+      if (byName) {
+        const s = byName.src || byName.getAttribute('data-delayed-url') || '';
+        if (/^https?:\/\//i.test(s)) return s;
+      }
+    }
+    // 3. Legacy class selectors
     const img = document.querySelector(
-      '.pv-top-card-profile-picture__image, .profile-photo-edit__preview, .presence-entity__image, img.pv-top-card-profile-picture__image, img[alt*="profile photo" i]'
-    );
+      '.pv-top-card-profile-picture__image, .profile-photo-edit__preview, img.pv-top-card-profile-picture__image, img[alt*="profile photo" i]'
+    )
+    || document.querySelector('img[class*="evi-image"][src*="media.licdn.com"], img[class*="evi-image"][data-delayed-url*="media.licdn.com"]')
+    || document.querySelector('button[aria-label*="photo" i] img[src*="media.licdn.com"]');
     const src = img?.src || img?.getAttribute('data-delayed-url') || '';
     return /^https?:\/\//i.test(src) ? src : null;
   };

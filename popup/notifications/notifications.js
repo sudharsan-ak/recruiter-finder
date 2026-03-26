@@ -6,26 +6,16 @@ function normalizeUrl(url) {
   return (url || '').split('?')[0].replace(/\/$/, '').toLowerCase();
 }
 
-function normalizeCompanySlugInput(value) {
-  return String(value || '')
-    .trim()
-    .toLowerCase()
-    .replace(/&/g, ' and ')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
-}
-
-function suggestCompanySlug(value) {
-  return normalizeCompanySlugInput(value);
-}
-
 function setProfileNotif({
   text = '',
   subtext = '',
   buttonText = '',
   showButton = false,
   editableCompany = false,
-  companyValue = ''
+  companyValue = '',
+  showManualBtn = false,
+  editableTitle = false,
+  titleValue = '',
 } = {}) {
   profileNotifText.textContent = text;
   profileNotifSubtext.textContent = subtext;
@@ -33,6 +23,9 @@ function setProfileNotif({
   profileNotifAddBtn.style.display = showButton ? '' : 'none';
   profileNotifEditWrap.style.display = editableCompany ? 'flex' : 'none';
   if (editableCompany) profileCompanyInput.value = companyValue || '';
+  profileNotifManualBtn.style.display = showManualBtn ? '' : 'none';
+  profileNotifTitleWrap.style.display = editableTitle ? 'flex' : 'none';
+  if (editableTitle) profileTitleInput.value = titleValue || '';
   profileNotif.classList.add('visible');
 }
 
@@ -40,12 +33,14 @@ function hideProfileNotif() {
   profileNotif.classList.remove('visible');
   profileNotifAddBtn.style.display = '';
   profileNotifEditWrap.style.display = 'none';
+  profileNotifManualBtn.style.display = 'none';
+  profileNotifTitleWrap.style.display = 'none';
   profileNotifText.textContent = '';
   profileNotifSubtext.textContent = '';
   _profileRecruiter = null;
 }
 
-function setProfileInlineCompanyEditor(companyName, { placeholder = 'Enter company...', onInput = null } = {}) {
+function setProfileInlineCompanyEditor(companyName) {
   currentEmployeeCount = null;
   currentVisaStatus = null;
   currentExperience = null;
@@ -56,54 +51,14 @@ function setProfileInlineCompanyEditor(companyName, { placeholder = 'Enter compa
   input.type = 'text';
   input.value = companyName || '';
   input.className = 'profile-inline-company-input';
-  input.placeholder = placeholder;
   input.addEventListener('input', () => {
     const value = input.value.trim();
     companyEl.textContent = value;
-    if (onInput) {
-      onInput(value);
-    } else if (_profileRecruiter) {
-      _profileRecruiter.companyName = value;
-    }
+    if (_profileRecruiter) _profileRecruiter.companyName = value;
   });
 
   companyMetaEl.appendChild(input);
   companyMetaEl.style.display = 'flex';
-}
-
-function showProfileManualCacheCheck({ name, title, url, companyName = '', photoUrl = null, reason = '', mode = 'manual_check' }) {
-  const suggestedSlug = suggestCompanySlug(companyName);
-  _profileRecruiter = {
-    name,
-    title,
-    url,
-    companyName,
-    photoUrl,
-    mode,
-    overrideSlug: suggestedSlug,
-  };
-  statusBox.textContent = reason || 'Enter a company slug to check this profile against your cache.';
-  errorDiv.style.display = 'none';
-  scanBtn.disabled = false;
-  scanBtn.textContent = 'Check Cache';
-  setProfileInlineCompanyEditor(suggestedSlug, {
-    placeholder: 'Enter company slug...',
-    onInput: value => {
-      const normalized = normalizeCompanySlugInput(value);
-      companyEl.textContent = normalized;
-      if (_profileRecruiter) _profileRecruiter.overrideSlug = normalized;
-    }
-  });
-  setProfileNotif({
-    text: companyName
-      ? `Auto-detection was not enough for ${name}.`
-      : `${name} does not appear to be a recruiter.`,
-    subtext: companyName
-      ? `Enter a company slug to check whether this profile is in your cache.`
-      : 'If you know the company slug, enter it and check your cache manually.',
-    showButton: false,
-    editableCompany: false
-  });
 }
 
 async function showProfileNotif({ name, title, url, companySlug, companyName, photoUrl = null }) {
@@ -164,10 +119,38 @@ globalThis.refreshProfileRecruiterState = refreshProfileRecruiterState;
 
 profileNotifDismiss.addEventListener('click', hideProfileNotif);
 
+profileNotifManualBtn.addEventListener('click', () => {
+  if (!_profileRecruiter) return;
+  const { name, title, companySlug, companyName } = _profileRecruiter;
+  const displayName = companyName || companySlug.replace(/-/g, ' ');
+  // Switch to manual-add mode with editable title
+  _profileRecruiter.mode = _profileRecruiter.companySlug ? 'add' : 'new';
+  setProfileNotif({
+    text: `Add ${name} to ${displayName}`,
+    subtext: 'Edit title if needed, then confirm:',
+    buttonText: `Add to ${displayName}`,
+    showButton: true,
+    showManualBtn: false,
+    editableTitle: true,
+    titleValue: title || '',
+  });
+});
+
 profileNotifAddBtn.addEventListener('click', async () => {
   if (!_profileRecruiter) return;
   const { name, title, url, companySlug, companyName, photoUrl, mode } = _profileRecruiter;
-  const recruiter = { name, title, url, photoUrl: photoUrl || null };
+
+  if (mode === 'company_lookup') {
+    hideProfileNotif();
+    onCompanyChange(companySlug);
+    return;
+  }
+
+  // Use edited title if title input is visible
+  const effectiveTitle = profileNotifTitleWrap.style.display !== 'none'
+    ? (profileTitleInput.value.trim() || title)
+    : title;
+  const recruiter = { name, title: effectiveTitle, url, photoUrl: photoUrl || null };
   const cacheData = await new Promise(r => chrome.storage.local.get(CACHE_KEY, r));
   const history = cacheData[CACHE_KEY] || {};
 
@@ -176,20 +159,34 @@ profileNotifAddBtn.addEventListener('click', async () => {
     const existingUrls = new Set(existing.recruiters.map(r => normalizeUrl(r.url)));
     const merged = existingUrls.has(normalizeUrl(url)) ? existing.recruiters : [...existing.recruiters, recruiter];
     await saveToCache(companySlug, merged, existing.logoUrl || null);
-    if (companySlug === currentSlug) {
-      renderResults(merged);
-      statusBox.textContent = `Added ${name}. ${merged.length} recruiters total.`;
-    }
   } else {
     await saveToCache(companySlug, [recruiter], null);
     if (companyName) await renameCompanyInCache(companySlug, companyName);
-    statusBox.textContent = `Saved ${name} under ${companyName}.`;
   }
   hideProfileNotif();
+  onCompanyChange(companySlug);
 });
 
-function handleProfileCheckResult(result) {
-  const { status, name = 'This person', title = '', reason = '', url = '', companyName = '', photoUrl = null } = result || {};
+async function handleProfileCheckResult(result) {
+  const { status, name = 'This person', title = '', reason = '', url } = result || {};
+
+  // If this profile URL is already in cache (manually added), show the blue notification
+  if (url) {
+    const cache = await getCache();
+    for (const [slug, entry] of Object.entries(cache)) {
+      if (entry.recruiters?.some(r => normalizeUrl(r.url) === normalizeUrl(url))) {
+        const displayName = entry.displayName || slug.replace(/-/g, ' ');
+        errorDiv.style.display = 'none';
+        setProfileNotif({
+          text: `${name} is already in your ${displayName} cache.`,
+          subtext: '',
+          showButton: false,
+        });
+        onCompanyChange(slug);
+        return;
+      }
+    }
+  }
 
   if (status === 'recruiter_found') {
     errorDiv.style.display = 'none';
@@ -200,28 +197,38 @@ function handleProfileCheckResult(result) {
   hideProfileNotif();
 
   if (status === 'not_recruiter') {
-    showProfileManualCacheCheck({
-      name,
-      title,
-      url,
-      companyName,
-      photoUrl,
-      reason: `Checked profile: ${name} does not appear to be a recruiter.`,
-      mode: 'manual_check'
-    });
+    const { companySlug, companyName, url, photoUrl } = result;
+    statusBox.textContent = `${name} doesn't appear to be a recruiter.`;
+    errorDiv.style.display = 'none';
+    if (companySlug) {
+      const displayName = companyName || companySlug.replace(/-/g, ' ');
+      _profileRecruiter = { name, title, url, companySlug, companyName: displayName, photoUrl, mode: 'company_lookup' };
+      setProfileNotif({
+        text: `${name} is not a recruiter.`,
+        subtext: `Check recruiters at ${displayName}?`,
+        buttonText: `Check ${displayName}`,
+        showButton: true,
+        showManualBtn: true,
+      });
+    }
     return;
   }
 
   if (status === 'company_unresolved') {
-    showProfileManualCacheCheck({
-      name,
-      title,
-      url,
-      companyName,
-      photoUrl,
-      reason: 'Recruiter detected, but the company slug could not be resolved automatically.',
-      mode: 'manual_check'
-    });
+    statusBox.textContent = 'Recruiter detected, but the current company could not be resolved.';
+    errorDiv.style.display = 'block';
+    errorDiv.style.color = '#c0392b';
+    errorDiv.textContent = reason || `Could not resolve a canonical company slug for ${name}${title ? ` (${title})` : ''}.`;
+    return;
+  }
+
+  if (status === 'profile_error') {
+    statusBox.textContent = 'Could not read this profile.';
+    if (reason) {
+      errorDiv.style.display = 'block';
+      errorDiv.style.color = '#c0392b';
+      errorDiv.textContent = reason;
+    }
     return;
   }
 
@@ -232,43 +239,6 @@ function handleProfileCheckResult(result) {
     errorDiv.textContent = reason;
   }
 }
-
-async function handleManualProfileCacheCheck() {
-  if (!_profileRecruiter) return;
-  const input = document.querySelector('.profile-inline-company-input');
-  const slug = normalizeCompanySlugInput(input?.value || _profileRecruiter.overrideSlug || companyEl.textContent || '');
-  if (!slug) {
-    statusBox.textContent = 'Enter a company slug to check cache.';
-    return;
-  }
-
-  _profileRecruiter.overrideSlug = slug;
-  _profileRecruiter.companySlug = slug;
-  companyEl.textContent = slug;
-  const cached = await getCached(slug);
-  if (!cached) {
-    statusBox.textContent = `No cache found for ${slug.replace(/-/g, ' ')}.`;
-    errorDiv.style.display = 'block';
-    errorDiv.style.color = '#0a66c2';
-    errorDiv.textContent = 'Try another company slug if you know it, or click "Scan This Company".';
-    _profileRecruiter.mode = 'manual_scan_slug';
-    scanBtn.disabled = false;
-    scanBtn.textContent = 'Scan This Company';
-    return;
-  }
-
-  errorDiv.style.display = 'none';
-  await showProfileNotif({
-    name: _profileRecruiter.name,
-    title: _profileRecruiter.title,
-    url: _profileRecruiter.url,
-    companySlug: slug,
-    companyName: cached.displayName || _profileRecruiter.companyName || slug.replace(/-/g, ' '),
-    photoUrl: _profileRecruiter.photoUrl || null,
-  });
-}
-
-globalThis.handleManualProfileCacheCheck = handleManualProfileCacheCheck;
 
 function updateObserverNotif() {
   const { slug, recruiters } = _obsPending;

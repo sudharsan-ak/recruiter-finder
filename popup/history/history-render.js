@@ -128,6 +128,7 @@ async function renderHistory(filter = '') {
         </div>
         <div class="history-recruiters" id="hist-${slug}">
           <div class="history-aliases-row" data-slug="${slug}">
+            ${recruiters.length > 0 ? `<label class="h-select-all-label"><input type="checkbox" class="h-select-all" data-slug="${slug}" /><span>Select all</span></label>` : ''}
             <span class="aliases-label">Alt names:</span>
             ${(entry.aliases || []).map(a =>
               `<span class="alias-chip">${a}<button class="remove-alias-btn" data-slug="${slug}" data-alias="${a}">×</button></span>`
@@ -139,10 +140,11 @@ async function renderHistory(filter = '') {
           </div>
           ${recruiters.length > 0
             ? `<div class="history-company-actions">
-                <button class="copy-history-selected-btn" data-slug="${slug}" style="display:none">📋 Copy Selected</button>
+                <button class="copy-history-selected-btn" data-slug="${slug}" style="display:none">📋 Copy Selected Links</button>
                 <button class="copy-history-selected-emails-btn" data-slug="${slug}" style="display:none">✉ Copy Emails</button>
+                <button class="delete-history-selected-btn" data-slug="${slug}" style="display:none">🗑 Delete</button>
                 <button class="clear-history-selected-btn" data-slug="${slug}" style="display:none">✕ Clear</button>
-                <button class="copy-history-btn" data-copy="${encodeURIComponent(copyText)}">📋 Copy All</button>
+                <button class="copy-history-btn" data-copy="${encodeURIComponent(copyText)}">📋 Copy All Links</button>
                 <button class="copy-history-emails-btn" data-copy="${encodeURIComponent(copyEmailText)}">✉ Copy All Emails</button>
                 <button class="open-history-btn" data-slug="${slug}">↗ Open All</button>
                </div>`
@@ -179,7 +181,7 @@ async function renderHistory(filter = '') {
       e.stopPropagation();
       navigator.clipboard.writeText(decodeURIComponent(btn.dataset.copy)).then(() => {
         btn.textContent = '✅ Copied!';
-        setTimeout(() => { btn.textContent = '📋 Copy All'; }, 2000);
+        setTimeout(() => { btn.textContent = '📋 Copy All Links'; }, 2000);
       });
     });
   });
@@ -202,17 +204,35 @@ async function renderHistory(filter = '') {
 
     historyList.querySelectorAll('.history-company').forEach(card => {
       const companyChecked = card.querySelectorAll('.h-check:checked');
-      const copyBtn = card.querySelector('.copy-history-selected-btn');
-      const copyEmailsBtn = card.querySelector('.copy-history-selected-emails-btn');
-      const clearBtn = card.querySelector('.clear-history-selected-btn');
-      if (copyBtn) copyBtn.style.display = companyChecked.length > 0 ? '' : 'none';
-      if (copyEmailsBtn) copyEmailsBtn.style.display = companyChecked.length > 0 ? '' : 'none';
-      if (clearBtn) clearBtn.style.display = companyChecked.length > 0 ? '' : 'none';
+      const hasSelection = companyChecked.length > 0;
+      const copyBtn        = card.querySelector('.copy-history-selected-btn');
+      const copyEmailsBtn  = card.querySelector('.copy-history-selected-emails-btn');
+      const deleteBtn      = card.querySelector('.delete-history-selected-btn');
+      const clearBtn       = card.querySelector('.clear-history-selected-btn');
+      const copyAllBtn     = card.querySelector('.copy-history-btn');
+      const copyAllEmailsBtn = card.querySelector('.copy-history-emails-btn');
+      const openAllBtn     = card.querySelector('.open-history-btn');
+      if (copyBtn)         copyBtn.style.display        = hasSelection ? '' : 'none';
+      if (copyEmailsBtn)   copyEmailsBtn.style.display  = hasSelection ? '' : 'none';
+      if (deleteBtn)       deleteBtn.style.display      = hasSelection ? '' : 'none';
+      if (clearBtn)        clearBtn.style.display       = hasSelection ? '' : 'none';
+      if (copyAllBtn)      copyAllBtn.style.display     = hasSelection ? 'none' : '';
+      if (copyAllEmailsBtn) copyAllEmailsBtn.style.display = hasSelection ? 'none' : '';
+      if (openAllBtn)      openAllBtn.style.display     = hasSelection ? 'none' : '';
     });
   }
 
   document.querySelectorAll('.h-check').forEach(cb => {
     cb.addEventListener('change', e => { e.stopPropagation(); updateHistSelectionBar(); });
+  });
+
+  document.querySelectorAll('.h-select-all').forEach(cb => {
+    cb.addEventListener('change', e => {
+      e.stopPropagation();
+      const slug = cb.dataset.slug;
+      historyList.querySelectorAll(`#hist-${slug} .h-check`).forEach(r => { r.checked = cb.checked; });
+      updateHistSelectionBar();
+    });
   });
 
   document.getElementById('histCopySelected')?.addEventListener('click', () => {
@@ -257,11 +277,35 @@ async function renderHistory(filter = '') {
     });
   });
 
+  document.querySelectorAll('.delete-history-selected-btn').forEach(btn => {
+    btn.addEventListener('click', async e => {
+      e.stopPropagation();
+      const slug = btn.dataset.slug;
+      const checked = [...historyList.querySelectorAll(`#hist-${slug} .h-check:checked`)];
+      if (!checked.length) return;
+      const companyName = document.getElementById(`hn-${slug}`)?.textContent?.trim() || slug;
+      const n = checked.length;
+      const confirmed = await (globalThis.openConfirmModal?.({
+        title: `Delete ${n} recruiter${n !== 1 ? 's' : ''}?`,
+        message: `Remove ${n} selected recruiter${n !== 1 ? 's' : ''} from ${companyName}? This cannot be undone.`,
+        confirmText: `Delete ${n} recruiter${n !== 1 ? 's' : ''}`
+      }) ?? Promise.resolve(confirm(`Delete ${n} recruiter(s) from ${companyName}?`)));
+      if (!confirmed) return;
+      for (const cb of checked) {
+        await removeRecruiterFromCache(slug, cb.dataset.url);
+      }
+      globalThis.setHistoryActionStatus?.(`Deleted ${n} recruiter${n !== 1 ? 's' : ''}`);
+      renderHistoryPreservingState(historySearch.value);
+    });
+  });
+
   document.querySelectorAll('.clear-history-selected-btn').forEach(btn => {
     btn.addEventListener('click', e => {
       e.stopPropagation();
       const slug = btn.dataset.slug;
       historyList.querySelectorAll(`#hist-${slug} .h-check:checked`).forEach(cb => { cb.checked = false; });
+      const selectAll = historyList.querySelector(`.h-select-all[data-slug="${slug}"]`);
+      if (selectAll) selectAll.checked = false;
       updateHistSelectionBar();
     });
   });

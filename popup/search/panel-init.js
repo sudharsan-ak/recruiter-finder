@@ -65,6 +65,8 @@ setInterval(async () => {
 
 async function initPanel() {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  _lastTabId  = tab?.id  ?? null;
+  _lastTabUrl = tab?.url ?? '';
   const url = tab?.url || '';
   resetProfileUiState();
 
@@ -112,6 +114,7 @@ async function initPanel() {
       currentSlug = null;
       companyEl.textContent = '';
       resetSearchCompanyState();
+      _lastProfilePollUrl = tab.url;
       requestProfileCheck(tab.id, true);
     } else {
       currentSlug = null;

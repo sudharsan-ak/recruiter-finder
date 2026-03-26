@@ -18,7 +18,7 @@ chrome.action.onClicked.addListener(tab => {
 
 // -- Recruiter filter patterns -------------------------------------------------
 
-const SEARCH_QUERY = 'technical,tech,recruiter,recruiting,talent,people,hiring,coordinator';
+const SEARCH_QUERY = 'technical,recruiter,recruiting,talent,people,hiring,coordinator';
 
 const RECRUITER_TITLE_PATTERNS = [
   /\brecruit/i,

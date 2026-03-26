@@ -155,12 +155,17 @@ if (globalThis.__recruiterFinderContentBooted) {
       const url = anchor.href.split('?')[0].replace(/\/$/, '');
       const nameEl  = card.querySelector('.artdeco-entity-lockup__title');
       const titleEl = card.querySelector('.artdeco-entity-lockup__subtitle');
-      const photoEl = card.querySelector('img.ghost-person__img, img[class*="presence-entity__image"], img[class*="EntityPhoto"]');
+      const photoEl = card.querySelector('img.ghost-person__img, img[class*="presence-entity__image"], img[class*="EntityPhoto"], img.artdeco-entity-image, img[class*="artdeco-entity-image"]')
+        || card.querySelector('img[src*="media.licdn.com"], img[data-delayed-url*="media.licdn.com"]');
       const name  = nameEl?.innerText?.trim() || '';
       const title = titleEl?.innerText?.trim() || '';
       if (!name || !url) return;
       if (!isRecruiterCard(title)) return;
-      results.push({ name, title, url, photo: photoEl?.src || null });
+      const photoSrc = photoEl
+        ? (photoEl.src?.includes('media.licdn.com') ? photoEl.src : null)
+          || photoEl.getAttribute('data-delayed-url') || null
+        : null;
+      results.push({ name, title, url, photoUrl: photoSrc });
     });
     return results;
   }
