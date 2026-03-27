@@ -129,7 +129,7 @@ async function renderHistory(filter = '') {
         </div>
         <div class="history-recruiters" id="hist-${slug}">
           <div class="history-aliases-row" data-slug="${slug}">
-            ${recruiters.length > 0 ? `<label class="h-select-all-label"><input type="checkbox" class="h-select-all" data-slug="${slug}" /><span>Select all</span></label>` : ''}
+            ${recruiters.length > 0 ? `<label class="h-select-all-label"><input type="checkbox" class="h-select-all" data-slug="${slug}" /><span>Select all</span></label><button class="h-email-filter-btn" data-slug="${slug}" title="Show only recruiters with email">✉ Email only</button>` : ''}
             <span class="aliases-label">Alt names:</span>
             ${(entry.aliases || []).map(a =>
               `<span class="alias-chip">${a}<button class="remove-alias-btn" data-slug="${slug}" data-alias="${a}">×</button></span>`
@@ -145,8 +145,8 @@ async function renderHistory(filter = '') {
                 <button class="copy-history-selected-emails-btn" data-slug="${slug}" style="display:none">✉ Copy Emails</button>
                 <button class="delete-history-selected-btn" data-slug="${slug}" style="display:none">🗑 Delete</button>
                 <button class="clear-history-selected-btn" data-slug="${slug}" style="display:none">✕ Clear</button>
-                <button class="copy-history-btn" data-copy="${encodeURIComponent(copyText)}">📋 Copy All Links</button>
-                <button class="copy-history-emails-btn" data-copy="${encodeURIComponent(copyEmailText)}">✉ Copy All Emails</button>
+                <button class="copy-history-btn" data-slug="${slug}">📋 Copy All Links</button>
+                <button class="copy-history-emails-btn" data-slug="${slug}">✉ Copy All Emails</button>
                 <button class="open-history-btn" data-slug="${slug}">↗ Open All</button>
                </div>`
             : ''}
@@ -177,10 +177,16 @@ async function renderHistory(filter = '') {
     });
   });
 
+  function visibleRows(slug) {
+    return [...historyList.querySelectorAll(`#hist-${slug} .history-recruiter-row`)]
+      .filter(row => row.style.display !== 'none');
+  }
+
   document.querySelectorAll('.copy-history-btn').forEach(btn => {
     btn.addEventListener('click', e => {
       e.stopPropagation();
-      navigator.clipboard.writeText(decodeURIComponent(btn.dataset.copy)).then(() => {
+      const urls = visibleRows(btn.dataset.slug).map(row => row.dataset.url).filter(Boolean);
+      navigator.clipboard.writeText(urls.join('\n')).then(() => {
         btn.textContent = '✅ Copied!';
         setTimeout(() => { btn.textContent = '📋 Copy All Links'; }, 2000);
       });
@@ -188,11 +194,11 @@ async function renderHistory(filter = '') {
   });
 
   document.querySelectorAll('.open-history-btn').forEach(btn => {
-    btn.addEventListener('click', async e => {
+    btn.addEventListener('click', e => {
       e.stopPropagation();
-      const latestCache = await getCache();
-      const recruiters = latestCache[btn.dataset.slug]?.recruiters || [];
-      recruiters.forEach(r => chrome.tabs.create({ url: r.url, active: false }));
+      visibleRows(btn.dataset.slug).forEach(row => {
+        chrome.tabs.create({ url: row.dataset.url, active: false });
+      });
     });
   });
 
@@ -389,12 +395,23 @@ async function renderHistory(filter = '') {
     });
   });
 
+  document.querySelectorAll('.h-email-filter-btn').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const slug = btn.dataset.slug;
+      const isActive = btn.classList.toggle('active');
+      historyList.querySelectorAll(`#hist-${slug} .history-recruiter-row`).forEach(row => {
+        const hasEmail = !!row.querySelector('.h-copy-email');
+        if (!hasEmail) row.style.display = isActive ? 'none' : '';
+      });
+    });
+  });
+
   document.querySelectorAll('.copy-history-emails-btn').forEach(btn => {
     btn.addEventListener('click', e => {
       e.stopPropagation();
-      const emails = decodeURIComponent(btn.dataset.copy || '')
-        .split('\n')
-        .map(v => v.trim())
+      const emails = visibleRows(btn.dataset.slug)
+        .map(row => row.querySelector('.h-copy-email')?.dataset.email || '')
         .filter(Boolean);
       if (!emails.length) return;
       navigator.clipboard.writeText(emails.join('\n')).then(() => {

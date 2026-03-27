@@ -73,6 +73,18 @@
       <div class="results-search-wrap" id="resultsSearchWrap" style="display:none">
         <input type="text" id="resultsSearch" placeholder="🔍 Filter recruiters..." />
         <button id="clearResultsSearch" title="Clear filter" style="display:none">✕</button>
+        <div class="results-options-wrap">
+          <button id="resultsOptionsBtn">≡ Options</button>
+          <div id="resultsOptionsMenu" style="display:none">
+            <button class="options-menu-item toggle-item" id="filterHasEmail">✉ Has Email only</button>
+            <div class="options-menu-sep"></div>
+            <button class="options-menu-item" id="expandAllSections">▾ Expand All</button>
+            <button class="options-menu-item" id="collapseAllSections">▸ Collapse All</button>
+            <button class="options-menu-item" id="openAllRecruiters">↗ Open All</button>
+            <button class="options-menu-item" id="copyAllLinks">📋 Copy All Links</button>
+            <button class="options-menu-item" id="copyAllEmails">✉ Copy All Emails</button>
+          </div>
+        </div>
       </div>
       <!-- <button id="copyBtn">📋 Copy All as Text</button> -->
       <div id="error"></div>

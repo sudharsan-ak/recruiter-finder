@@ -4,13 +4,6 @@
   overflow-y: auto;
 }
 
-.collapse-controls {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  margin-bottom: 4px;
-}
-
 #resultsSearch {
   flex: 1;
   padding: 3px 9px;
@@ -25,7 +18,50 @@
 
 #resultsSearch:focus { border-color: #0a66c2; }
 
-.collapse-btns { display: flex; gap: 6px; flex-shrink: 0; }
+.results-options-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+#resultsOptionsBtn {
+  font-size: 10px;
+  padding: 3px 8px;
+  border: 1.5px solid #ccc;
+  border-radius: 10px;
+  background: none;
+  color: #555;
+  cursor: pointer;
+  white-space: nowrap;
+}
+#resultsOptionsBtn:hover { border-color: #0a66c2; color: #0a66c2; background: #f0f5ff; }
+
+#resultsOptionsMenu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 4px);
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+  min-width: 150px;
+  z-index: 999;
+  padding: 4px 0;
+}
+
+.options-menu-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 6px 14px;
+  font-size: 11px;
+  color: #333;
+  cursor: pointer;
+}
+.options-menu-item:hover { background: #f0f5ff; color: #0a66c2; }
+.options-menu-item.active { color: #0a66c2; font-weight: 600; }
+.options-menu-sep { height: 1px; background: #eee; margin: 4px 0; }
 
 .ctrl-btn {
   background: none;

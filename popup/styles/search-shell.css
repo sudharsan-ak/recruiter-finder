@@ -135,9 +135,10 @@ body {
 #scanBtn:hover { background: #004182; }
 #scanBtn:disabled { background: #aaa; cursor: not-allowed; }
 
-.results-search-wrap { position: relative; margin-bottom: 4px; }
+.results-search-wrap { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
 #resultsSearch {
-  width: 100%;
+  flex: 1;
+  min-width: 0;
   box-sizing: border-box;
   padding: 5px 28px 5px 10px;
   border: 1px solid #ddd;

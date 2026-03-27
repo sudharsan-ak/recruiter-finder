@@ -59,16 +59,7 @@ async function renderResults(data, passedLogoUrl = null) {
   const clearRSBtn = document.getElementById('clearResultsSearch');
   if (clearRSBtn) clearRSBtn.style.display = 'none';
 
-  let html = `<div class="collapse-controls">
-    <div class="collapse-btns">
-      <button class="ctrl-btn" id="expandAllSections">▾ Expand All</button>
-      <button class="ctrl-btn" id="collapseAllSections">▸Collapse All</button>
-      <button class="ctrl-btn open-all-btn" id="openAllRecruiters">↗Open All</button>
-      <button class="ctrl-btn" id="copyAllLinks">📋Copy All</button>
-      <button class="ctrl-btn" id="copyAllEmails">✉ Copy All Emails</button>
-    </div>
-  </div>
-  <div class="copy-selected-row" id="copySelectedRow">
+  let html = `<div class="copy-selected-row" id="copySelectedRow">
     <button class="ctrl-btn copy-selected-btn" id="copySelectedBtn">📋Copy Selected (<span id="copySelectedCount">0</span>)</button>
     <button class="ctrl-btn copy-selected-emails-btn" id="copySelectedEmailsBtn">✉ Copy Emails</button>
     <button class="ctrl-btn clear-selection-btn" id="clearSelectionBtn">✕ Clear Selection</button>
@@ -162,45 +153,6 @@ async function renderResults(data, passedLogoUrl = null) {
     });
   });
 
-  document.getElementById('expandAllSections')?.addEventListener('click', () => {
-    resultsDiv.querySelectorAll('.section-cards').forEach(c => c.classList.remove('collapsed'));
-    resultsDiv.querySelectorAll('.section-label').forEach(l => l.classList.remove('collapsed'));
-  });
-
-  document.getElementById('collapseAllSections')?.addEventListener('click', () => {
-    resultsDiv.querySelectorAll('.section-cards').forEach(c => c.classList.add('collapsed'));
-    resultsDiv.querySelectorAll('.section-label').forEach(l => l.classList.add('collapsed'));
-  });
-
-  document.getElementById('openAllRecruiters')?.addEventListener('click', () => {
-    resultsDiv.querySelectorAll('.card[data-url]').forEach(card => {
-      chrome.tabs.create({ url: card.dataset.url, active: false });
-    });
-  });
-
-  document.getElementById('copyAllLinks')?.addEventListener('click', () => {
-    const urls = [...resultsDiv.querySelectorAll('.card[data-url]')].map(c => c.dataset.url);
-    navigator.clipboard.writeText(urls.join('\n')).then(() => {
-      const btn = document.getElementById('copyAllLinks');
-      const orig = btn.textContent;
-      btn.textContent = '✅ Copied!';
-      setTimeout(() => { btn.textContent = orig; }, 1500);
-    });
-  });
-
-  document.getElementById('copyAllEmails')?.addEventListener('click', () => {
-    const emails = [...resultsDiv.querySelectorAll('.card-email-btn')]
-      .map(btn => btn.dataset.email || '')
-      .filter(Boolean);
-    if (!emails.length) return;
-    navigator.clipboard.writeText(emails.join('\n')).then(() => {
-      const btn = document.getElementById('copyAllEmails');
-      const orig = btn.textContent;
-      btn.textContent = '✅ Copied!';
-      setTimeout(() => { btn.textContent = orig; }, 1500);
-    });
-  });
-
   function updateCopySelectedBtn() {
     const checked = resultsDiv.querySelectorAll('.recruiter-check:checked');
     const row = document.getElementById('copySelectedRow');
@@ -253,40 +205,6 @@ async function renderResults(data, passedLogoUrl = null) {
     });
   });
 
-  function runFilter(term) {
-    resultsDiv.querySelectorAll('.card').forEach(card => {
-      const rawName = card.dataset.name || '';
-      const rawTitle = card.dataset.title || '';
-      const matches = !term || rawName.toLowerCase().includes(term) || rawTitle.toLowerCase().includes(term);
-      card.style.display = matches ? '' : 'none';
-      const nameEl = card.querySelector('.card-name');
-      const titleEl = card.querySelector('.card-title');
-      const badge = nameEl?.querySelector('.badge')?.outerHTML || '';
-      if (nameEl) nameEl.innerHTML = hl(rawName, term) + badge;
-      if (titleEl) titleEl.innerHTML = hl(rawTitle || '—', term);
-    });
-
-    resultsDiv.querySelectorAll('.section-cards').forEach(section => {
-      const label = resultsDiv.querySelector(`.section-label[data-gid="${section.id}"]`);
-      const hasVisible = [...section.querySelectorAll('.card')].some(c => c.style.display !== 'none');
-      if (!hasVisible) {
-        section.style.display = 'none';
-        if (label) label.style.display = 'none';
-      } else {
-        section.style.display = '';
-        if (label) label.style.display = '';
-      }
-    });
-
-    if (!term) {
-      resultsDiv.querySelectorAll('.section-cards').forEach(section => {
-        section.style.display = '';
-        const label = resultsDiv.querySelector(`.section-label[data-gid="${section.id}"]`);
-        if (label) label.style.display = '';
-      });
-    }
-  }
-
   const existingSearch = document.getElementById('resultsSearch');
   if (existingSearch) {
     const newEl = existingSearch.cloneNode(true);
@@ -302,10 +220,7 @@ async function renderResults(data, passedLogoUrl = null) {
 
   document.getElementById('clearResultsSearch')?.addEventListener('click', () => {
     const input = document.getElementById('resultsSearch');
-    if (input) {
-      input.value = '';
-      input.focus();
-    }
+    if (input) { input.value = ''; input.focus(); }
     document.getElementById('clearResultsSearch').style.display = 'none';
     runFilter('');
   });
@@ -357,3 +272,104 @@ async function renderResults(data, passedLogoUrl = null) {
     });
   });
 }
+
+// ── Module-level: runFilter, email toggle, options dropdown ──────────────────
+
+let _emailFilterActive = false;
+
+function runFilter(term) {
+  resultsDiv.querySelectorAll('.card').forEach(card => {
+    const rawName  = card.dataset.name  || '';
+    const rawTitle = card.dataset.title || '';
+    const rawEmail = card.querySelector('.card-email-btn')?.dataset.email || '';
+    const matchesText  = !term
+      || rawName.toLowerCase().includes(term)
+      || rawTitle.toLowerCase().includes(term)
+      || rawEmail.toLowerCase().includes(term);
+    const matchesEmail = !_emailFilterActive || !!rawEmail;
+    card.style.display = (matchesText && matchesEmail) ? '' : 'none';
+    const nameEl  = card.querySelector('.card-name');
+    const titleEl = card.querySelector('.card-title');
+    const badge     = nameEl?.querySelector('.badge')?.outerHTML || '';
+    const emailSpan = nameEl?.querySelector('.card-email')?.outerHTML || '';
+    if (nameEl)  nameEl.innerHTML  = hl(rawName, term) + emailSpan + badge;
+    if (titleEl) titleEl.innerHTML = hl(rawTitle || '—', term);
+  });
+
+  resultsDiv.querySelectorAll('.section-cards').forEach(section => {
+    const label = resultsDiv.querySelector(`.section-label[data-gid="${section.id}"]`);
+    const visibleCount = [...section.querySelectorAll('.card')].filter(c => c.style.display !== 'none').length;
+    section.style.display = visibleCount > 0 ? '' : 'none';
+    if (label) {
+      label.style.display = visibleCount > 0 ? '' : 'none';
+      const labelText = label.querySelector('.section-label-text');
+      if (labelText) labelText.textContent = labelText.textContent.replace(/\(\d+\)$/, `(${visibleCount})`);
+    }
+  });
+}
+
+document.getElementById('expandAllSections')?.addEventListener('click', () => {
+  resultsDiv.querySelectorAll('.section-cards').forEach(c => c.classList.remove('collapsed'));
+  resultsDiv.querySelectorAll('.section-label').forEach(l => l.classList.remove('collapsed'));
+});
+
+document.getElementById('collapseAllSections')?.addEventListener('click', () => {
+  resultsDiv.querySelectorAll('.section-cards').forEach(c => c.classList.add('collapsed'));
+  resultsDiv.querySelectorAll('.section-label').forEach(l => l.classList.add('collapsed'));
+});
+
+document.getElementById('openAllRecruiters')?.addEventListener('click', () => {
+  [...resultsDiv.querySelectorAll('.card[data-url]')]
+    .filter(c => c.style.display !== 'none')
+    .forEach(card => chrome.tabs.create({ url: card.dataset.url, active: false }));
+});
+
+document.getElementById('copyAllLinks')?.addEventListener('click', () => {
+  const urls = [...resultsDiv.querySelectorAll('.card[data-url]')]
+    .filter(c => c.style.display !== 'none')
+    .map(c => c.dataset.url);
+  navigator.clipboard.writeText(urls.join('\n')).then(() => {
+    const btn = document.getElementById('copyAllLinks');
+    const orig = btn.textContent;
+    btn.textContent = '✅ Copied!';
+    setTimeout(() => { btn.textContent = orig; }, 1500);
+  });
+});
+
+document.getElementById('copyAllEmails')?.addEventListener('click', () => {
+  const emails = [...resultsDiv.querySelectorAll('.card[data-url]')]
+    .filter(c => c.style.display !== 'none')
+    .map(c => c.querySelector('.card-email-btn')?.dataset.email || '')
+    .filter(Boolean);
+  if (!emails.length) return;
+  navigator.clipboard.writeText(emails.join('\n')).then(() => {
+    const btn = document.getElementById('copyAllEmails');
+    const orig = btn.textContent;
+    btn.textContent = '✅ Copied!';
+    setTimeout(() => { btn.textContent = orig; }, 1500);
+  });
+});
+
+document.getElementById('filterHasEmail')?.addEventListener('click', () => {
+  _emailFilterActive = !_emailFilterActive;
+  const btn = document.getElementById('filterHasEmail');
+  if (btn) btn.classList.toggle('active', _emailFilterActive);
+  const term = (document.getElementById('resultsSearch')?.value || '').trim().toLowerCase();
+  runFilter(term);
+});
+
+// Options dropdown toggle
+document.getElementById('resultsOptionsBtn')?.addEventListener('click', e => {
+  e.stopPropagation();
+  const menu = document.getElementById('resultsOptionsMenu');
+  if (menu) menu.style.display = menu.style.display === 'none' ? '' : 'none';
+});
+
+document.addEventListener('click', e => {
+  const wrap = document.getElementById('resultsOptionsMenu');
+  if (!wrap || wrap.style.display === 'none') return;
+  if (!document.getElementById('resultsOptionsMenu')?.contains(e.target) &&
+      e.target.id !== 'resultsOptionsBtn') {
+    wrap.style.display = 'none';
+  }
+});

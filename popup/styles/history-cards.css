@@ -197,6 +197,14 @@
 }
 .h-select-all-label input[type="checkbox"] { width: 13px; height: 13px; cursor: pointer; margin: 0; }
 
+.h-email-filter-btn {
+  font-size: 10px; padding: 2px 7px; border-radius: 10px;
+  border: 1px solid #ccc; background: none; color: #666;
+  cursor: pointer; flex-shrink: 0; white-space: nowrap;
+}
+.h-email-filter-btn:hover { border-color: #0a66c2; color: #0a66c2; }
+.h-email-filter-btn.active { border-color: #0a66c2; color: #0a66c2; background: #e8f0fe; font-weight: 600; }
+
 .history-company-actions { display: flex; gap: 6px; padding: 4px 0 2px; }
 .history-company-actions button {
   font-size: 10px; padding: 3px 10px; border-radius: 10px;
