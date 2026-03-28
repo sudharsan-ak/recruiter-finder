@@ -82,7 +82,27 @@ export async function runScraper(companySlug, deps) {
     await sleep(1800);
 
     const results = await scrapeTab(tabId);
-    const filtered = results.filter(r => isRecruiter(r.title));
+    let filtered = results.filter(r => isRecruiter(r.title));
+
+    if (filtered.length < 5) {
+      chrome.storage.session.set({ status: `Only ${filtered.length} found. Trying keyword search...` });
+      const seen = new Set(filtered.map(r => r.url));
+      const extraResults = [...filtered];
+      for (const kw of ['recruiter', 'talent', 'hiring']) {
+        const kwUrl = `${peopleBaseUrl}?keywords=${encodeURIComponent(kw)}`;
+        await navigateTab(tabId, kwUrl);
+        await waitForTabLoad(tabId);
+        await sleep(1800);
+        const kwResults = await scrapeTab(tabId);
+        for (const r of kwResults) {
+          if (isRecruiter(r.title) && !seen.has(r.url)) {
+            seen.add(r.url);
+            extraResults.push(r);
+          }
+        }
+      }
+      filtered = extraResults;
+    }
 
     let hiringFrameResults = [];
     if (filtered.length === 0) {

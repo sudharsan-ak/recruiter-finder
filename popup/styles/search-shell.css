@@ -140,7 +140,7 @@ body {
   flex: 1;
   min-width: 0;
   box-sizing: border-box;
-  padding: 5px 28px 5px 10px;
+  padding: 5px 10px;
   border: 1px solid #ddd;
   border-radius: 16px;
   font-size: 11px;
@@ -148,9 +148,9 @@ body {
 }
 #resultsSearch:focus { border-color: #0a66c2; }
 #clearResultsSearch {
-  position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+  flex-shrink: 0;
   background: none; border: none; cursor: pointer; font-size: 11px;
-  color: #999; padding: 2px; line-height: 1;
+  color: #999; padding: 2px 0; line-height: 1;
 }
 #clearResultsSearch:hover { color: #333; }
 

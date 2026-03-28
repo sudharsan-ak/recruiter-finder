@@ -62,7 +62,7 @@ if (globalThis.__recruiterFinderContentBooted) {
   function tryNotify(jobId, attempt = 0) {
     const slug = findCompanySlug();
     if (slug) {
-      chrome.runtime.sendMessage({ action: 'jobChanged', companySlug: slug }).catch(() => {});
+      try { chrome.runtime.sendMessage({ action: 'jobChanged', companySlug: slug }).catch(() => {}); } catch {}
       return;
     }
     if (attempt < 5) setTimeout(() => tryNotify(jobId, attempt + 1), 1000);
