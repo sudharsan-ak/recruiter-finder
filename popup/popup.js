@@ -45,8 +45,11 @@ const profileNotifEditWrap = document.getElementById('profileNotifEditWrap');
 const profileCompanyInput = document.getElementById('profileCompanyInput');
 const profileNotifAddBtn = document.getElementById('profileNotifAddBtn');
 const profileNotifManualBtn = document.getElementById('profileNotifManualBtn');
+const profileNotifAltBtn = document.getElementById('profileNotifAltBtn');
 const profileNotifTitleWrap = document.getElementById('profileNotifTitleWrap');
 const profileTitleInput = document.getElementById('profileTitleInput');
+const profileNotifCompanyWrap = document.getElementById('profileNotifCompanyWrap');
+const profileCompanyNameInput = document.getElementById('profileCompanyNameInput');
 const profileNotifDismiss = document.getElementById('profileNotifDismiss');
 const observerModal = document.getElementById('observerModal');
 const obsModalTitle = document.getElementById('obsModalTitle');
@@ -76,6 +79,7 @@ let isScanning = false;
 let currentScanSlug = null;
 let currentSlug = null;
 let _onJobPage = false;
+let _currentJobUrl = '';
 
 function saveQueue() {
   chrome.storage.session.set({ manualScanQueue: scanQueue.map(q => q.slug) }).catch(() => {});

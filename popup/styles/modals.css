@@ -221,7 +221,27 @@
 }
 #profileTitleInput:focus { border-color: #0a66c2; }
 #profileTitleInput::placeholder { color: #bbb; }
-#profileNotifAddBtn, #profileNotifManualBtn {
+#profileNotifCompanyWrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+}
+#profileCompanyNameInput {
+  flex: 1;
+  min-width: 0;
+  padding: 4px 9px;
+  font-size: 11px;
+  border: 1.5px solid #ddd;
+  border-radius: 10px;
+  outline: none;
+  font-family: inherit;
+  color: #1d1d1d;
+  background: #fff;
+}
+#profileCompanyNameInput:focus { border-color: #0a66c2; }
+#profileCompanyNameInput::placeholder { color: #bbb; }
+#profileNotifAddBtn, #profileNotifAltBtn, #profileNotifManualBtn {
   background: #0a66c2; color: white; border: none;
   padding: 4px 10px; border-radius: 12px; font-size: 10px;
   font-weight: 600; cursor: pointer; white-space: nowrap; flex-shrink: 0;

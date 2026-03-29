@@ -128,6 +128,11 @@ async function initPanel() {
   companyEl.textContent = slug.replace(/-/g, ' ');
   currentSlug = slug;
   _onJobPage = /linkedin\.com\/jobs\/view\/\d+/.test(url) || /[?&]currentJobId=\d+/.test(url);
+  if (_onJobPage) {
+    const dm = url.match(/linkedin\.com\/jobs\/view\/(\d+)/);
+    const jm = dm || url.match(/[?&]currentJobId=(\d+)/);
+    _currentJobUrl = jm ? `https://www.linkedin.com/jobs/view/${jm[1]}/` : url;
+  }
   resetSearchCompanyState();
 
   const sd = await new Promise(r =>

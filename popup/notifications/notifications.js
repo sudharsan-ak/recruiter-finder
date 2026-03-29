@@ -6,6 +6,23 @@ function normalizeUrl(url) {
   return (url || '').split('?')[0].replace(/\/$/, '').toLowerCase();
 }
 
+function nameToSlug(name) {
+  return (name || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+}
+
+async function findCacheMatchByName(typedName) {
+  const cache = await getCache();
+  const slug = nameToSlug(typedName);
+  if (cache[slug]) return { slug, entry: cache[slug] };
+  const lower = typedName.trim().toLowerCase();
+  for (const [s, entry] of Object.entries(cache)) {
+    const dn = (entry.displayName || s.replace(/-/g, ' ')).toLowerCase();
+    if (dn === lower) return { slug: s, entry };
+    if (entry.aliases?.some(a => a.toLowerCase() === lower)) return { slug: s, entry };
+  }
+  return null;
+}
+
 function setProfileNotif({
   text = '',
   subtext = '',
@@ -16,6 +33,10 @@ function setProfileNotif({
   showManualBtn = false,
   editableTitle = false,
   titleValue = '',
+  editableCompanyName = false,
+  companyNameValue = '',
+  showAltBtn = false,
+  altBtnText = '',
 } = {}) {
   profileNotifText.textContent = text;
   profileNotifSubtext.textContent = subtext;
@@ -26,6 +47,10 @@ function setProfileNotif({
   profileNotifManualBtn.style.display = showManualBtn ? '' : 'none';
   profileNotifTitleWrap.style.display = editableTitle ? 'flex' : 'none';
   if (editableTitle) profileTitleInput.value = titleValue || '';
+  profileNotifCompanyWrap.style.display = editableCompanyName ? 'flex' : 'none';
+  if (editableCompanyName) profileCompanyNameInput.value = companyNameValue || '';
+  profileNotifAltBtn.style.display = showAltBtn ? '' : 'none';
+  profileNotifAltBtn.textContent = altBtnText;
   profileNotif.classList.add('visible');
 }
 
@@ -35,6 +60,8 @@ function hideProfileNotif() {
   profileNotifEditWrap.style.display = 'none';
   profileNotifManualBtn.style.display = 'none';
   profileNotifTitleWrap.style.display = 'none';
+  profileNotifCompanyWrap.style.display = 'none';
+  profileNotifAltBtn.style.display = 'none';
   profileNotifText.textContent = '';
   profileNotifSubtext.textContent = '';
   _profileRecruiter = null;
@@ -119,20 +146,33 @@ globalThis.refreshProfileRecruiterState = refreshProfileRecruiterState;
 
 profileNotifDismiss.addEventListener('click', hideProfileNotif);
 
+profileNotifAltBtn.addEventListener('click', async () => {
+  if (!_profileRecruiter || _profileRecruiter.mode !== 'merge_confirm') return;
+  const { name, url, photoUrl, pendingTitle, companySlug, companyName } = _profileRecruiter;
+  const typedCompany = profileCompanyNameInput.value.trim() || companyName;
+  const newSlug = nameToSlug(typedCompany) || companySlug;
+  const recruiter = { name, title: pendingTitle, url, photoUrl: photoUrl || null };
+  await saveToCache(newSlug, [recruiter], null);
+  await renameCompanyInCache(newSlug, typedCompany);
+  hideProfileNotif();
+  onCompanyChange(newSlug);
+});
+
 profileNotifManualBtn.addEventListener('click', () => {
   if (!_profileRecruiter) return;
   const { name, title, companySlug, companyName } = _profileRecruiter;
   const displayName = companyName || companySlug.replace(/-/g, ' ');
-  // Switch to manual-add mode with editable title
-  _profileRecruiter.mode = _profileRecruiter.companySlug ? 'add' : 'new';
+  _profileRecruiter.mode = 'manual_add';
   setProfileNotif({
     text: `Add ${name} to ${displayName}`,
-    subtext: 'Edit title if needed, then confirm:',
+    subtext: 'Edit title and company if needed, then confirm:',
     buttonText: `Add to ${displayName}`,
     showButton: true,
     showManualBtn: false,
     editableTitle: true,
     titleValue: title || '',
+    editableCompanyName: true,
+    companyNameValue: displayName,
   });
 });
 
@@ -146,10 +186,72 @@ profileNotifAddBtn.addEventListener('click', async () => {
     return;
   }
 
+  if (mode === 'merge_confirm') {
+    // User chose "Merge" — add recruiter into the existing matched company
+    const { mergeTargetSlug, pendingTitle, pendingCompanyDisplayName } = _profileRecruiter;
+    const recruiter = { name, title: pendingTitle, url, photoUrl: photoUrl || null };
+    const cacheData = await new Promise(r => chrome.storage.local.get(CACHE_KEY, r));
+    const history = cacheData[CACHE_KEY] || {};
+    const existing = history[mergeTargetSlug] || { recruiters: [] };
+    const existingUrls = new Set(existing.recruiters.map(r => normalizeUrl(r.url)));
+    const merged = existingUrls.has(normalizeUrl(url)) ? existing.recruiters : [...existing.recruiters, recruiter];
+    await saveToCache(mergeTargetSlug, merged, existing.logoUrl || null);
+    hideProfileNotif();
+    onCompanyChange(mergeTargetSlug);
+    return;
+  }
+
   // Use edited title if title input is visible
   const effectiveTitle = profileNotifTitleWrap.style.display !== 'none'
     ? (profileTitleInput.value.trim() || title)
     : title;
+
+  // If company name input is visible, resolve the typed company name
+  if (profileNotifCompanyWrap.style.display !== 'none') {
+    const typedCompany = profileCompanyNameInput.value.trim() || companyName;
+    const match = await findCacheMatchByName(typedCompany);
+
+    if (match && match.slug !== companySlug) {
+      // Found an existing entry with a different slug — ask merge or new
+      const existingDisplayName = match.entry.displayName || match.slug.replace(/-/g, ' ');
+      _profileRecruiter.mode = 'merge_confirm';
+      _profileRecruiter.mergeTargetSlug = match.slug;
+      _profileRecruiter.pendingTitle = effectiveTitle;
+      setProfileNotif({
+        text: `"${typedCompany}" matches existing entry "${existingDisplayName}".`,
+        subtext: 'Merge this recruiter into it, or save as a separate new company?',
+        buttonText: `Merge into ${existingDisplayName}`,
+        showButton: true,
+        showAltBtn: true,
+        altBtnText: 'Add as New',
+        editableTitle: false,
+        editableCompanyName: false,
+      });
+      return;
+    }
+
+    // No conflict — use the typed company name as a new entry
+    const newSlug = nameToSlug(typedCompany) || companySlug;
+    const recruiter = { name, title: effectiveTitle, url, photoUrl: photoUrl || null };
+    if (match && match.slug === companySlug) {
+      // Same company, just add to it
+      const cacheData = await new Promise(r => chrome.storage.local.get(CACHE_KEY, r));
+      const history = cacheData[CACHE_KEY] || {};
+      const existing = history[companySlug] || { recruiters: [] };
+      const existingUrls = new Set(existing.recruiters.map(r => normalizeUrl(r.url)));
+      const merged = existingUrls.has(normalizeUrl(url)) ? existing.recruiters : [...existing.recruiters, recruiter];
+      await saveToCache(companySlug, merged, existing.logoUrl || null);
+      hideProfileNotif();
+      onCompanyChange(companySlug);
+    } else {
+      await saveToCache(newSlug, [recruiter], null);
+      await renameCompanyInCache(newSlug, typedCompany);
+      hideProfileNotif();
+      onCompanyChange(newSlug);
+    }
+    return;
+  }
+
   const recruiter = { name, title: effectiveTitle, url, photoUrl: photoUrl || null };
   const cacheData = await new Promise(r => chrome.storage.local.get(CACHE_KEY, r));
   const history = cacheData[CACHE_KEY] || {};

@@ -222,6 +222,7 @@ async function handleExternalPage(tab) {
 
   scanBtn.disabled = true;
   _onJobPage = true;
+  _currentJobUrl = tab.url || '';
   statusBox.textContent = 'Detecting company from page...';
 
   getVisaSponsorshipFromJobPage(tab.id).then(s => showVisaMeta(s));

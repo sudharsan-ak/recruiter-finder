@@ -300,6 +300,7 @@
   margin-left: 2px;
   flex-shrink: 0;
   font-family: inherit;
+  text-decoration: none;
 }
 .copy-jd-chip:hover { border-color: #0a66c2; color: #0a66c2; background: #f0f5ff; }
 
