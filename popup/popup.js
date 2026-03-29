@@ -9,9 +9,10 @@ const progressBar = document.getElementById('progressBar');
 const progressFill = document.getElementById('progressFill');
 
 const tabSearchBtn = document.getElementById('tabSearch');
-const tabBulkBtn = document.getElementById('tabBulk');
+const tabJobsBtn = document.getElementById('tabJobs');
 const tabHistoryBtn = document.getElementById('tabHistory');
 const searchPanel = document.getElementById('searchPanel');
+const jobsPanel = document.getElementById('jobsPanel');
 const bulkPanel = document.getElementById('bulkPanel');
 const historyPanel = document.getElementById('historyPanel');
 const historyList = document.getElementById('historyList');
@@ -100,9 +101,14 @@ autoScanToggle.addEventListener('change', () => {
 });
 
 function activateTab(activeBtn, activePanel, extraInit) {
-  [tabSearchBtn, tabBulkBtn, tabHistoryBtn].forEach(btn => btn.classList.remove('active'));
-  [searchPanel, bulkPanel, historyPanel].forEach(panel => panel.classList.remove('active'));
-  activeBtn.classList.add('active');
+  [tabSearchBtn, tabJobsBtn, tabHistoryBtn].forEach(btn => btn.classList.remove('active'));
+  [searchPanel, jobsPanel, bulkPanel, historyPanel].forEach(panel => panel.classList.remove('active'));
+  if (activeBtn) activeBtn.classList.add('active');
+  // Reset menu button to ☰ whenever a real tab is activated
+  if (activeBtn !== null) {
+    tabMenuBtn.textContent = '☰';
+    tabMenuBtn.classList.remove('active');
+  }
   activePanel.classList.add('active');
   if (extraInit) extraInit();
 }
@@ -113,16 +119,56 @@ tabSearchBtn.addEventListener('click', () => {
   activateTab(tabSearchBtn, searchPanel);
 });
 
-tabBulkBtn.addEventListener('click', () => {
+tabJobsBtn.addEventListener('click', () => {
   historySearch.value = '';
   clearSearchBtn.style.display = 'none';
-  activateTab(tabBulkBtn, bulkPanel);
+  activateTab(tabJobsBtn, jobsPanel, () => { globalThis.renderJobsPanel?.(); });
 });
 
 tabHistoryBtn.addEventListener('click', () => activateTab(tabHistoryBtn, historyPanel, () => {
   renderHistory();
   globalThis.backfillLogos?.();
 }));
+
+// ☰ Tab menu (Bulk Scan, future extras)
+const tabMenuBtn = document.getElementById('tabMenuBtn');
+const tabMenuDropdown = document.getElementById('tabMenuDropdown');
+
+let _prevTabBtn = tabSearchBtn;
+let _prevPanel = searchPanel;
+
+function exitSubView() {
+  tabMenuBtn.textContent = '☰';
+  tabMenuBtn.classList.remove('active');
+  if (_prevTabBtn === tabHistoryBtn) {
+    activateTab(tabHistoryBtn, historyPanel, () => { renderHistory(); globalThis.backfillLogos?.(); });
+  } else {
+    activateTab(_prevTabBtn, _prevPanel);
+  }
+}
+
+tabMenuBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  if (tabMenuBtn.classList.contains('active')) {
+    // Currently showing a sub-view — act as back button
+    exitSubView();
+    return;
+  }
+  const open = tabMenuDropdown.style.display !== 'none';
+  tabMenuDropdown.style.display = open ? 'none' : 'block';
+});
+document.addEventListener('click', () => { tabMenuDropdown.style.display = 'none'; });
+
+document.getElementById('tabMenuBulk').addEventListener('click', () => {
+  _prevTabBtn = [tabSearchBtn, tabJobsBtn, tabHistoryBtn].find(b => b.classList.contains('active')) || tabSearchBtn;
+  _prevPanel = [searchPanel, jobsPanel, historyPanel].find(p => p.classList.contains('active')) || searchPanel;
+  historySearch.value = '';
+  clearSearchBtn.style.display = 'none';
+  tabMenuDropdown.style.display = 'none';
+  activateTab(null, bulkPanel);
+  tabMenuBtn.textContent = 'Bulk Scan';
+  tabMenuBtn.classList.add('active');
+});
 
 chrome.runtime.onMessage.addListener((request) => {
   if (request.action === 'scanComplete') {
@@ -165,7 +211,7 @@ chrome.runtime.onMessage.addListener((request) => {
   }
 });
 
-document.getElementById('refreshPanelBtn').addEventListener('click', () => {
+document.getElementById('statusRefreshBtn').addEventListener('click', () => {
   currentEmployeeCount = null;
   currentVisaStatus = null;
   currentExperience = null;

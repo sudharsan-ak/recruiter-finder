@@ -8,24 +8,33 @@
   <link rel="stylesheet" href="styles/history.css" />
   <link rel="stylesheet" href="styles/history-cards.css" />
   <link rel="stylesheet" href="styles/modals.css" />
+  <link rel="stylesheet" href="styles/jobs.css" />
 </head>
 <body>
   <!-- Tab bar -->
   <div class="tab-bar">
     <div class="tab-tabs">
       <button class="tab-btn active" id="tabSearch">Search</button>
-      <button class="tab-btn" id="tabBulk">Bulk</button>
+      <button class="tab-btn" id="tabJobs">Jobs</button>
       <button class="tab-btn" id="tabHistory">History</button>
     </div>
     <div class="tab-context">
-      <button id="refreshPanelBtn" title="Refresh panel">Refresh</button>
+      <div class="tab-menu-wrap">
+        <button id="tabMenuBtn" title="More options">☰</button>
+        <div id="tabMenuDropdown" style="display:none">
+          <button class="tab-menu-item" id="tabMenuBulk">📋 Bulk Scan</button>
+        </div>
+      </div>
     </div>
   </div>
   <div id="companyName" class="sr-company-name" aria-hidden="true"></div>
   <!-- Search panel -->
   <div class="panel active" id="searchPanel">
     <div id="main">
-      <div id="statusBox">Click "Find Recruiters" from any LinkedIn job posting.</div>
+      <div class="status-row">
+        <div id="statusBox">Click "Find Recruiters" from any LinkedIn job posting.</div>
+        <button id="statusRefreshBtn" title="Refresh panel">↺</button>
+      </div>
       <div id="companyMeta" style="display:none"></div>
       <div id="techStack" style="display:none"></div>
       <div id="progressBar"><div id="progressFill"></div></div>
@@ -97,7 +106,12 @@
     </div>
   </div>
 
-  <!-- Bulk panel -->
+  <!-- Jobs panel -->
+  <div class="panel" id="jobsPanel">
+    <div id="jobsMain"></div>
+  </div>
+
+  <!-- Bulk panel (accessed via ☰ menu) -->
   <div class="panel" id="bulkPanel">
     <p>Enter company names — one per line or comma separated. Each will be scanned in sequence.</p>
     <textarea id="bulkTextarea" placeholder="Google&#10;Stripe&#10;Anthropic&#10;OpenAI, Meta"></textarea>
@@ -252,6 +266,7 @@
   <script src="history/history-tools.js"></script>
   <script src="history/history-render.js"></script>
   <script src="bulk/bulk.js"></script>
+  <script src="jobs/jobs-panel.js"></script>
   <script src="scanner/scanner.js"></script>
   <script src="search/email-check.js"></script>
   <script src="search/panel-init.js"></script>

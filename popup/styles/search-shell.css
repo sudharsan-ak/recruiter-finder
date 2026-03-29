@@ -54,20 +54,85 @@ body {
   flex-shrink: 0;
 }
 
-#refreshPanelBtn {
+.tab-menu-wrap { position: relative; }
+
+#tabMenuBtn {
   background: none;
   border: none;
   color: #6b7280;
   cursor: pointer;
-  font-size: 10px;
-  font-weight: 700;
-  padding: 3px 5px;
+  font-size: 15px;
+  padding: 3px 7px;
+  border-radius: 6px;
   line-height: 1;
-  flex-shrink: 0;
-  border-radius: 12px;
 }
 
-#refreshPanelBtn:hover { color: #0a66c2; background: #eef5ff; }
+#tabMenuBtn:hover:not(.active) { color: #333; background: #f0f0f0; }
+#tabMenuBtn.active {
+  color: #0a66c2;
+  background: none;
+  border-bottom: 2px solid #0a66c2;
+  border-radius: 0;
+  margin-bottom: -2px;
+  padding: 9px 6px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+#tabMenuDropdown {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 4px);
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  z-index: 50;
+  min-width: 140px;
+  padding: 4px 0;
+}
+
+.tab-menu-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 8px 14px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #444;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.tab-menu-item:hover { background: #f5f5f5; color: #0a66c2; }
+
+.status-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.status-row #statusBox {
+  flex: 1;
+  margin-bottom: 0;
+}
+
+#statusRefreshBtn {
+  background: none;
+  border: 1px solid #ddd;
+  color: #6b7280;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 5px 9px;
+  border-radius: 8px;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+#statusRefreshBtn:hover { color: #0a66c2; border-color: #0a66c2; background: #eef5ff; }
 
 .sr-company-name {
   position: absolute;
