@@ -2,10 +2,70 @@
   if (window._jobScannerLoaded) return;
   window._jobScannerLoaded = true;
 
+  const HASH_KEY    = 'jobScanHashIndex';
+  const HISTORY_KEY = 'jobScanHistory';
+  const HISTORY_CAP = 10000;
+
   let _scanning = false;
   let _stopRequested = false;
 
   function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+  function hashJD(text) {
+    const s = text.toLowerCase().replace(/\s+/g, ' ').trim();
+    let h = 5381;
+    for (let i = 0; i < s.length; i++) {
+      h = ((h << 5) + h) ^ s.charCodeAt(i);
+      h = h >>> 0;
+    }
+    return h.toString(36);
+  }
+
+  async function checkAndRecordJD(title, company, url, jdText) {
+    if (!jdText) return { isDuplicate: false, previouslySeen: null };
+    const hash = hashJD(jdText);
+    const stored = await new Promise(r =>
+      chrome.storage.local.get([HASH_KEY, HISTORY_KEY], r)
+    );
+    const hashIndex = stored[HASH_KEY]   || [];
+    const history   = stored[HISTORY_KEY] || [];
+
+    const hashSet = new Set(hashIndex);
+    const seenBefore = hashSet.has(hash);
+
+    // Extract job ID from URL for same-job detection
+    function extractJobId(u) {
+      const m = (u || '').match(/\/jobs\/view\/(\d+)|currentJobId=(\d+)/);
+      return m ? (m[1] || m[2]) : null;
+    }
+    const currentJobId = extractJobId(url);
+
+    let isDuplicate = false;
+    let previouslySeen = null;
+    if (seenBefore) {
+      const prev = history.find(e => e[0] === hash);
+      if (prev) {
+        const prevJobId = extractJobId(prev[3]);
+        // Only a true repost if the job ID is different
+        if (!currentJobId || !prevJobId || currentJobId !== prevJobId) {
+          isDuplicate = true;
+          previouslySeen = { title: prev[1], company: prev[2], url: prev[3], firstSeenAt: prev[4] };
+        }
+        // Same job ID = re-scan of the same listing, not a repost; leave isDuplicate false
+      }
+    }
+
+    if (!seenBefore) {
+      // Add to Tier 1
+      hashIndex.push(hash);
+      // Add to Tier 2 (newest at front, cap at HISTORY_CAP)
+      history.unshift([hash, title, company, url, Date.now()]);
+      if (history.length > HISTORY_CAP) history.length = HISTORY_CAP;
+      await chrome.storage.local.set({ [HASH_KEY]: hashIndex, [HISTORY_KEY]: history });
+    }
+
+    return { isDuplicate, previouslySeen };
+  }
 
   function getJobCards() {
     return [...document.querySelectorAll('.job-card-container--clickable')];
@@ -79,6 +139,15 @@
     // When we exhaust visible cards and haven't hit the end footer yet, we
     // scroll the last card into view to nudge LinkedIn into loading more.
 
+    // Build a job-ID → history-entry map for fast "already scanned" lookup
+    const _hist = await new Promise(r => chrome.storage.local.get([HISTORY_KEY], r));
+    const _histEntries = _hist[HISTORY_KEY] || [];
+    const historyByJobId = new Map();
+    for (const e of _histEntries) {
+      const m = (e[3] || '').match(/\/jobs\/view\/(\d+)|currentJobId=(\d+)/);
+      if (m) historyByJobId.set(m[1] || m[2], e);
+    }
+
     const scannedIds = new Set();
     let done = 0;
     let stuckCount = 0;
@@ -139,6 +208,34 @@
         '.artdeco-entity-lockup__subtitle, .job-card-container__primary-description'
       )?.textContent.trim() || '';
 
+      // ── Already in history: skip the click, pull metadata from seen jobs ──
+      if (historyByJobId.has(jobId)) {
+        const h = historyByJobId.get(jobId);
+        const cachedResult = {
+          title:         h[1] || cardTitle,
+          company:       h[2] || cardCompany,
+          url:           h[3] || `https://www.linkedin.com/jobs/view/${jobId}/`,
+          jobId,
+          jdText:        '',
+          scannedAt:     Date.now(),
+          isDuplicate:   false,
+          isFromHistory: true,
+          firstSeenAt:   h[4],
+          previouslySeen: null,
+        };
+        const stored2 = await new Promise(r => chrome.storage.local.get(['jobScanResults'], r));
+        const existing2 = stored2.jobScanResults || [];
+        if (!existing2.some(r => (r.jobId || r.url) === jobId)) existing2.push(cachedResult);
+        done++;
+        await chrome.storage.local.set({
+          jobScanResults: existing2,
+          jobScanState: { running: true, total: Math.max(getJobCards().length, done), done, pageUrl: location.href },
+        });
+        try { chrome.runtime.sendMessage({ action: 'jobScanProgress' }).catch(() => {}); } catch {}
+        if (done >= maxJobs) break;
+        continue;
+      }
+
       // Update progress (total = however many are in DOM right now)
       await chrome.storage.local.set({
         jobScanState: { running: true, total: getJobCards().length, done, pageUrl: location.href },
@@ -153,13 +250,19 @@
 
       const { title, company, jdText, url, jobId: extractedId } = extractFromDetailPane();
 
+      const finalTitle   = title   || cardTitle;
+      const finalCompany = company || cardCompany;
+      const { isDuplicate, previouslySeen } = await checkAndRecordJD(finalTitle, finalCompany, url, jdText);
+
       const result = {
-        title: title || cardTitle,
-        company: company || cardCompany,
+        title: finalTitle,
+        company: finalCompany,
         url,
         jobId: extractedId || jobId,
         jdText,
         scannedAt: Date.now(),
+        isDuplicate,
+        previouslySeen,
       };
 
       const stored = await new Promise(r => chrome.storage.local.get(['jobScanResults'], r));
@@ -191,7 +294,7 @@
 
   chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
     if (msg.action === 'startJobScan') scanJobs(msg.maxJobs || Infinity);
-    if (msg.action === 'stopJobScan') _stopRequested = true;
+    if (msg.action === 'stopJobScan') { _stopRequested = true; _scanning = false; }
     if (msg.action === 'getVisibleJobIds') {
       const ids = [...document.querySelectorAll('.job-card-container--clickable')]
         .map(c => c.getAttribute('data-job-id'))

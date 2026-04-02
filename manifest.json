@@ -3,7 +3,7 @@
   "name": "LinkedIn Recruiter Finder",
   "version": "3.0",
   "description": "Click from any LinkedIn job page — auto-finds all recruiters from the company People tab.",
-  "permissions": ["activeTab", "scripting", "tabs", "storage", "sidePanel", "contextMenus"],
+  "permissions": ["activeTab", "scripting", "tabs", "storage", "unlimitedStorage", "sidePanel", "contextMenus"],
   "host_permissions": ["https://www.linkedin.com/*", "<all_urls>"],
 
   "icons": {

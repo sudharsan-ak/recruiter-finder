@@ -275,7 +275,8 @@ async function renderResults(data, passedLogoUrl = null) {
 
 // ── Module-level: runFilter, email toggle, options dropdown ──────────────────
 
-let _emailFilterActive = false;
+let _emailFilterActive   = false;
+let _noEmailFilterActive = false;
 
 function runFilter(term) {
   resultsDiv.querySelectorAll('.card').forEach(card => {
@@ -286,7 +287,10 @@ function runFilter(term) {
       || rawName.toLowerCase().includes(term)
       || rawTitle.toLowerCase().includes(term)
       || rawEmail.toLowerCase().includes(term);
-    const matchesEmail = !_emailFilterActive || !!rawEmail;
+    const hasEmail = !!rawEmail;
+    const matchesEmail = _emailFilterActive   ? hasEmail
+                       : _noEmailFilterActive ? !hasEmail
+                       : true;
     card.style.display = (matchesText && matchesEmail) ? '' : 'none';
     const nameEl  = card.querySelector('.card-name');
     const titleEl = card.querySelector('.card-title');
@@ -351,9 +355,19 @@ document.getElementById('copyAllEmails')?.addEventListener('click', () => {
 });
 
 document.getElementById('filterHasEmail')?.addEventListener('click', () => {
-  _emailFilterActive = !_emailFilterActive;
-  const btn = document.getElementById('filterHasEmail');
-  if (btn) btn.classList.toggle('active', _emailFilterActive);
+  _emailFilterActive   = !_emailFilterActive;
+  if (_emailFilterActive) _noEmailFilterActive = false;
+  document.getElementById('filterHasEmail')?.classList.toggle('active', _emailFilterActive);
+  document.getElementById('filterNoEmail')?.classList.toggle('active', false);
+  const term = (document.getElementById('resultsSearch')?.value || '').trim().toLowerCase();
+  runFilter(term);
+});
+
+document.getElementById('filterNoEmail')?.addEventListener('click', () => {
+  _noEmailFilterActive = !_noEmailFilterActive;
+  if (_noEmailFilterActive) _emailFilterActive = false;
+  document.getElementById('filterNoEmail')?.classList.toggle('active', _noEmailFilterActive);
+  document.getElementById('filterHasEmail')?.classList.toggle('active', false);
   const term = (document.getElementById('resultsSearch')?.value || '').trim().toLowerCase();
   runFilter(term);
 });

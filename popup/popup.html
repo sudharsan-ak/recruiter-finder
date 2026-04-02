@@ -91,6 +91,7 @@
           <button id="resultsOptionsBtn">≡ Options</button>
           <div id="resultsOptionsMenu" style="display:none">
             <button class="options-menu-item toggle-item" id="filterHasEmail">✉ Has Email only</button>
+            <button class="options-menu-item toggle-item" id="filterNoEmail">✉ No Email only</button>
             <div class="options-menu-sep"></div>
             <button class="options-menu-item" id="expandAllSections">▾ Expand All</button>
             <button class="options-menu-item" id="collapseAllSections">▸ Collapse All</button>
@@ -109,6 +110,21 @@
   <!-- Jobs panel -->
   <div class="panel" id="jobsPanel">
     <div id="jobsMain"></div>
+  </div>
+
+  <!-- My Stack Modal -->
+  <div class="modal-overlay" id="jobsStackModal">
+    <div class="modal">
+      <h2>🗂 My Stack</h2>
+      <div class="jobs-stack-tags" id="jobsStackModalTags"></div>
+      <div class="jobs-stack-input-row" style="margin-top:10px">
+        <input type="text" id="jobsStackModalInput" placeholder="Add technology…" autocomplete="off" />
+        <button id="jobsStackModalAddBtn">+ Add</button>
+      </div>
+      <div class="modal-actions">
+        <button id="jobsStackModalCloseBtn">Done</button>
+      </div>
+    </div>
   </div>
 
   <!-- Bulk panel (accessed via ☰ menu) -->
@@ -266,6 +282,9 @@
   <script src="history/history-tools.js"></script>
   <script src="history/history-render.js"></script>
   <script src="bulk/bulk.js"></script>
+  <script src="jobs/jobs-data.js"></script>
+  <script src="jobs/jobs-results.js"></script>
+  <script src="jobs/jobs-seen.js"></script>
   <script src="jobs/jobs-panel.js"></script>
   <script src="scanner/scanner.js"></script>
   <script src="search/email-check.js"></script>
