@@ -16,7 +16,10 @@ function _drawResults({ error } = {}) {
     matched: r.isFromHistory
       ? (_jobMatchCache[r.jobId] || [])
       : matchStack(r.jdText, _jobStack),
-  })).sort((a, b) => b.matched.length - a.matched.length);
+  }));
+  if (_resultsSortOrder === 'score') {
+    allScored.sort((a, b) => b.matched.length - a.matched.length);
+  }
 
   // Persist match scores + JD texts for newly scanned jobs
   const newMatchEntries = {};
@@ -81,6 +84,10 @@ function _drawResults({ error } = {}) {
           ${scored.length} shown · ${matchingCount} match${selCount ? ` · ${selCount} selected` : ''}
         </span>
         <div class="jobs-results-header-right">
+          <button class="jobs-sort-btn ${_resultsSortOrder === 'score' ? 'active' : ''}" id="jobsSortBtn"
+            title="${_resultsSortOrder === 'score' ? 'Sorted by score — click for scan order' : 'Sort by score'}">
+            ${_resultsSortOrder === 'score' ? '↓ Score' : '↕ Sort'}
+          </button>
           ${selCount > 0 ? `<button class="jobs-clear-btn" id="jobsClearSelBtn">✕ Clear</button>` : ''}
         </div>
       </div>
@@ -170,6 +177,11 @@ function _wireResultsEvents() {
   document.getElementById('jobsMaxInput')?.addEventListener('change', (e) => {
     _maxJobs = Math.max(1, parseInt(e.target.value) || 25);
     chrome.storage.local.set({ [JOBS_MAX_KEY]: _maxJobs });
+  });
+
+  document.getElementById('jobsSortBtn')?.addEventListener('click', () => {
+    _resultsSortOrder = _resultsSortOrder === 'score' ? 'scan' : 'score';
+    _drawResults();
   });
 
   document.getElementById('jobsClearSelBtn')?.addEventListener('click', () => {

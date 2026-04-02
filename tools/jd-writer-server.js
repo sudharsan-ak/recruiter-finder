@@ -58,9 +58,10 @@ const server = http.createServer((req, res) => {
         ? fs.readFileSync(outputFile, 'utf8')
         : '';
       const separator = '\n\n\n\n';
+      const trimmedText = text.replace(/^\n+/, '');
       const nextText = existing.length === 0
-        ? text
-        : `${existing.replace(/\n*$/, '')}${separator}${text}`;
+        ? trimmedText
+        : `${existing.replace(/\n*$/, '')}${separator}${trimmedText}`;
 
       fs.writeFileSync(outputFile, nextText, 'utf8');
       console.log(`[${new Date().toISOString()}] Wrote JD to ${outputFile}`);

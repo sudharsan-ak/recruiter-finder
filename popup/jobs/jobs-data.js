@@ -23,6 +23,7 @@ let _maxJobs             = 25;
 let _expandedCardId      = null;
 let _collapseListener    = null;
 let _companyFilter       = '';
+let _resultsSortOrder    = 'scan';     // 'scan' | 'score'
 let _activeJobsSubTab    = 'results';  // 'results' | 'seen'
 let _jobMatchCache       = {};         // jobId → matched tag names[]
 let _onLinkedInJobsPage  = false;      // true only when active tab is linkedin.com/jobs
