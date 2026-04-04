@@ -168,7 +168,7 @@ async function initPanel() {
   const cached = await getCached(slug);
   if (cached) {
     const age = Math.round((Date.now() - cached.scannedAt) / 60000);
-    const ageText = age < 60 ? `${age}m ago` : `${Math.round(age / 60)}h ago`;
+    const ageText = age < 60 ? `${age}m ago` : age < 1440 ? `${Math.round(age / 60)}h ago` : `${Math.floor(age / 1440)}d ${Math.floor((age % 1440) / 60)}h ago`;
     statusBox.textContent = `Loaded from cache (scanned ${ageText}). ${cached.recruiters.length} recruiters.`;
     progressBar.style.display = 'block';
     progressFill.style.width = '100%';

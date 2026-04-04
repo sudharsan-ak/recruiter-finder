@@ -45,7 +45,7 @@ async function renderHistory(filter = '') {
       ? `${lastMin}m ago`
       : lastMin < 1440
         ? `${Math.round(lastMin / 60)}h ago`
-        : `${Math.round(lastMin / 1440)}d ago`;
+        : `${Math.floor(lastMin / 1440)}d ${Math.floor((lastMin % 1440) / 60)}h ago`;
     historyStats.textContent = `${keys.length} companies · ${totalRecruiters} recruiters · Last scan ${lastStr}`;
     historyStats.style.display = 'block';
   } else if (historyStats) {
@@ -223,6 +223,14 @@ async function renderHistory(filter = '') {
     if (countEl) countEl.textContent = `${checked.length} selected`;
 
     historyList.querySelectorAll('.history-company').forEach(card => {
+      const visibleRowsInCard = [...card.querySelectorAll('.history-recruiter-row')].filter(r => r.style.display !== 'none');
+      const checkedVisibleRows = visibleRowsInCard.filter(r => r.querySelector('.h-check')?.checked);
+      const selectAllCb = card.querySelector('.h-select-all');
+      if (selectAllCb && visibleRowsInCard.length > 0) {
+        selectAllCb.checked = checkedVisibleRows.length === visibleRowsInCard.length;
+        selectAllCb.indeterminate = checkedVisibleRows.length > 0 && checkedVisibleRows.length < visibleRowsInCard.length;
+      }
+
       const companyChecked = card.querySelectorAll('.h-check:checked');
       const hasSelection = companyChecked.length > 0;
       const copyBtn        = card.querySelector('.copy-history-selected-btn');
@@ -250,7 +258,12 @@ async function renderHistory(filter = '') {
     cb.addEventListener('change', e => {
       e.stopPropagation();
       const slug = cb.dataset.slug;
-      historyList.querySelectorAll(`#hist-${slug} .h-check`).forEach(r => { r.checked = cb.checked; });
+      historyList.querySelectorAll(`#hist-${slug} .history-recruiter-row`).forEach(row => {
+        if (row.style.display !== 'none') {
+          const rowCb = row.querySelector('.h-check');
+          if (rowCb) rowCb.checked = cb.checked;
+        }
+      });
       updateHistSelectionBar();
     });
   });
@@ -415,8 +428,15 @@ async function renderHistory(filter = '') {
       const isActive = btn.classList.toggle('active');
       historyList.querySelectorAll(`#hist-${slug} .history-recruiter-row`).forEach(row => {
         const hasEmail = !!row.querySelector('.h-copy-email');
-        if (!hasEmail) row.style.display = isActive ? 'none' : '';
+        if (!hasEmail) {
+          row.style.display = isActive ? 'none' : '';
+          if (isActive) {
+            const cb = row.querySelector('.h-check');
+            if (cb) cb.checked = false;
+          }
+        }
       });
+      updateHistSelectionBar();
     });
   });
 
