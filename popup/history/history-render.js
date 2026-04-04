@@ -136,8 +136,16 @@ async function renderHistory(filter = '') {
             ).join('')}
             <button class="add-alias-btn" data-slug="${slug}">＋</button>
           </div>
-          <div class="history-recruiter-list${recruiters.length > 5 ? ' is-scrollable' : ''}">
-            ${rows}
+          <div class="history-recruiter-list-wrap">
+            ${recruiters.length > 0 ? `
+            <div class="h-list-filter-bar">
+              <span class="h-list-filter-icon">🔍</span>
+              <input class="h-list-filter-input" data-slug="${slug}" placeholder="Filter recruiters..." />
+              <button class="h-list-filter-clear" data-slug="${slug}" style="display:none" title="Clear filter">✕</button>
+            </div>` : ''}
+            <div class="history-recruiter-list${recruiters.length > 5 ? ' is-scrollable' : ''}">
+              ${rows}
+            </div>
           </div>
           ${recruiters.length > 0
             ? `<div class="history-company-actions">
@@ -170,9 +178,14 @@ async function renderHistory(filter = '') {
   document.querySelectorAll('.history-company-header').forEach(header => {
     header.addEventListener('click', (e) => {
       if (e.target.classList.contains('delete-entry-btn')) return;
-      const target = document.getElementById(`hist-${header.dataset.slug}`);
+      const slug = header.dataset.slug;
+      const target = document.getElementById(`hist-${slug}`);
       const willOpen = !target.classList.contains('open');
-      historyList.querySelectorAll('.history-recruiters.open').forEach(el => el.classList.remove('open'));
+      historyList.querySelectorAll('.history-recruiters.open').forEach(el => {
+        const closingSlug = el.id.replace(/^hist-/, '');
+        clearListFilter(closingSlug);
+        el.classList.remove('open');
+      });
       if (willOpen) target.classList.add('open');
     });
   });
@@ -404,6 +417,59 @@ async function renderHistory(filter = '') {
         const hasEmail = !!row.querySelector('.h-copy-email');
         if (!hasEmail) row.style.display = isActive ? 'none' : '';
       });
+    });
+  });
+
+  function applyListFilterHighlight(list, q) {
+    list.querySelectorAll('.history-recruiter-row').forEach(row => {
+      ['.h-name', '.h-title', '.h-email'].forEach(sel => {
+        const el = row.querySelector(sel);
+        if (!el) return;
+        if (!el.dataset.plain) el.dataset.plain = el.textContent;
+        el.innerHTML = q ? hl(el.dataset.plain, q) : el.dataset.plain;
+      });
+    });
+  }
+
+  function clearListFilter(slug) {
+    const input = historyList.querySelector(`#hist-${slug} .h-list-filter-input`);
+    const clearBtn = historyList.querySelector(`#hist-${slug} .h-list-filter-clear`);
+    const list = historyList.querySelector(`#hist-${slug} .history-recruiter-list`);
+    if (!input) return;
+    input.value = '';
+    if (clearBtn) clearBtn.style.display = 'none';
+    if (list) {
+      list.querySelectorAll('.history-recruiter-row').forEach(r => { r.style.removeProperty('display'); });
+      applyListFilterHighlight(list, '');
+    }
+  }
+
+  document.querySelectorAll('.h-list-filter-input').forEach(input => {
+    const slug = input.dataset.slug;
+    const list = historyList.querySelector(`#hist-${slug} .history-recruiter-list`);
+    const clearBtn = historyList.querySelector(`#hist-${slug} .h-list-filter-clear`);
+
+    input.addEventListener('input', () => {
+      const q = input.value.trim().toLowerCase();
+      clearBtn.style.display = q ? '' : 'none';
+      list.querySelectorAll('.history-recruiter-row').forEach(row => {
+        const name  = row.querySelector('.h-name')?.dataset.plain?.toLowerCase()  || row.querySelector('.h-name')?.textContent?.toLowerCase()  || '';
+        const title = row.querySelector('.h-title')?.dataset.plain?.toLowerCase() || row.querySelector('.h-title')?.textContent?.toLowerCase() || '';
+        const email = row.querySelector('.h-email')?.dataset.plain?.toLowerCase() || row.querySelector('.h-email')?.textContent?.toLowerCase() || '';
+        row.style.display = (!q || name.includes(q) || title.includes(q) || email.includes(q)) ? '' : 'none';
+      });
+      applyListFilterHighlight(list, q);
+    });
+
+    input.addEventListener('keydown', e2 => {
+      if (e2.key === 'Escape') clearListFilter(slug);
+    });
+  });
+
+  document.querySelectorAll('.h-list-filter-clear').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      clearListFilter(btn.dataset.slug);
     });
   });
 
