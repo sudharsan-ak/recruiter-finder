@@ -78,7 +78,9 @@ async function renderResults(data, passedLogoUrl = null) {
       const photoHtml = r.photoUrl ? `<img class="recruiter-photo" src="${r.photoUrl}" alt="" />` : '';
       const photoClass = r.photoUrl ? 'has-photo' : '';
       const emailHtml = r.email ? `<span class="card-email">(${r.email})</span>` : '';
-      const copyEmailBtn = r.email ? `<button class="card-email-btn" data-email="${r.email}">Copy Email</button>` : '';
+      const copyEmailBtn = r.email
+        ? `<button class="card-email-btn" data-email="${r.email}">✉ Copy Email</button>`
+        : `<button class="card-add-email-btn" data-url="${r.url}">+ Email</button>`;
       html += `
         <div class="card ${cls} ${photoClass}" data-url="${r.url}" data-name="${r.name}" data-title="${r.title || ''}">
           ${photoHtml}
@@ -236,7 +238,56 @@ async function renderResults(data, passedLogoUrl = null) {
   resultsDiv.querySelectorAll('.card-email-btn').forEach(btn => {
     btn.addEventListener('click', e => {
       e.stopPropagation();
-      copyLink(btn.dataset.email, btn, 'Copy Email');
+      copyLink(btn.dataset.email, btn, '✉ Copy Email');
+    });
+  });
+
+  resultsDiv.querySelectorAll('.card-add-email-btn').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const input = document.createElement('input');
+      input.type = 'email';
+      input.className = 'card-inline-email-input';
+      input.placeholder = 'name@company.com';
+      btn.replaceWith(input);
+      input.focus();
+
+      const save = async () => {
+        const val = input.value.trim().toLowerCase();
+        if (!val) { input.replaceWith(btn); return; }
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) {
+          input.classList.add('card-inline-email-input--error');
+          setTimeout(() => input.classList.remove('card-inline-email-input--error'), 1500);
+          return;
+        }
+        const url = btn.dataset.url;
+        const updated = await upsertRecruiterEmail(currentSlug, url, val);
+        if (!updated) { input.replaceWith(btn); return; }
+        // Update DOM in place — no full re-render
+        const card = input.closest('.card');
+        const nameEl = card?.querySelector('.card-name');
+        if (nameEl && !nameEl.querySelector('.card-email')) {
+          const span = document.createElement('span');
+          span.className = 'card-email';
+          span.textContent = `(${val})`;
+          nameEl.appendChild(span);
+        }
+        const copyBtn2 = document.createElement('button');
+        copyBtn2.className = 'card-email-btn';
+        copyBtn2.dataset.email = val;
+        copyBtn2.textContent = '✉ Copy Email';
+        copyBtn2.addEventListener('click', ev => {
+          ev.stopPropagation();
+          copyLink(val, copyBtn2, '✉ Copy Email');
+        });
+        input.replaceWith(copyBtn2);
+      };
+
+      input.addEventListener('blur', save);
+      input.addEventListener('keydown', ev => {
+        if (ev.key === 'Enter') { ev.preventDefault(); input.blur(); }
+        if (ev.key === 'Escape') { ev.preventDefault(); input.replaceWith(btn); }
+      });
     });
   });
 

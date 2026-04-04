@@ -1,4 +1,5 @@
 let _profileRecruiter = null;
+let _profileNotifTimer = null;
 let _obsPending = { slug: null, recruiters: [] };
 let _obsModalSlug = null;
 
@@ -55,6 +56,7 @@ function setProfileNotif({
 }
 
 function hideProfileNotif() {
+  clearTimeout(_profileNotifTimer);
   profileNotif.classList.remove('visible');
   profileNotifAddBtn.style.display = '';
   profileNotifEditWrap.style.display = 'none';
@@ -103,8 +105,10 @@ async function showProfileNotif({ name, title, url, companySlug, companyName, ph
         text: `${name} is already in your ${companyName} cache.`,
         subtext: '',
         showButton: false,
-        editableCompany: false
+        editableCompany: false,
       });
+      clearTimeout(_profileNotifTimer);
+      _profileNotifTimer = setTimeout(hideProfileNotif, 4000);
       return;
     }
 
@@ -284,6 +288,8 @@ async function handleProfileCheckResult(result) {
           subtext: '',
           showButton: false,
         });
+        clearTimeout(_profileNotifTimer);
+        _profileNotifTimer = setTimeout(hideProfileNotif, 4000);
         onCompanyChange(slug);
         return;
       }

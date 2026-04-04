@@ -159,6 +159,19 @@ tabMenuBtn.addEventListener('click', (e) => {
 });
 document.addEventListener('click', () => { tabMenuDropdown.style.display = 'none'; });
 
+// Close all dropdowns when user clicks outside the popup window onto the webpage
+window.addEventListener('blur', () => {
+  tabMenuDropdown.style.display = 'none';
+  const resultsOpts = document.getElementById('resultsOptionsMenu');
+  if (resultsOpts) resultsOpts.style.display = 'none';
+  const jobsOpts = document.getElementById('jobsOptionsDropdown');
+  if (jobsOpts) jobsOpts.style.display = 'none';
+  const seenClear = document.getElementById('seenClearDropdown');
+  if (seenClear) seenClear.style.display = 'none';
+  const histOpts = document.getElementById('historyOptionsMenu');
+  if (histOpts) histOpts.classList.remove('open');
+});
+
 document.getElementById('tabMenuBulk').addEventListener('click', () => {
   _prevTabBtn = [tabSearchBtn, tabJobsBtn, tabHistoryBtn].find(b => b.classList.contains('active')) || tabSearchBtn;
   _prevPanel = [searchPanel, jobsPanel, historyPanel].find(p => p.classList.contains('active')) || searchPanel;
