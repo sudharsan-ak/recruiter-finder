@@ -84,6 +84,10 @@ function _drawSeen() {
           style="display:${selCount ? '' : 'none'};padding:4px 10px;font-size:10px">
           📋 Copy${selCount ? ` (${selCount})` : ''}
         </button>
+        <button class="jobs-sort-btn ${_seenSort === 'score' ? 'active' : ''}" id="seenSortBtn"
+          title="${_seenSort === 'score' ? 'Sorted by score — click to revert' : 'Sort by score'}">
+          ${_seenSort === 'score' ? '↓ Score' : '↕ Sort'}
+        </button>
         <div class="jobs-results-menu-wrap">
           <button class="jobs-menu-btn" id="seenClearMenuBtn">🗑 Clear ▾</button>
           <div class="jobs-menu-dropdown" id="seenClearDropdown" style="display:none">
@@ -169,7 +173,7 @@ function _copySelectedSeen() {
   const selected = _seenHistory.filter(e => _selectedSeenIds.has(e[0]));
   if (!selected.length) return;
 
-  const entries = selected.map(([hash, title, company, url]) => {
+  const entries = selected.map(([, title, company, url]) => {
     const jobId = _seenJobId(url);
     return {
       company: company || 'Unknown Company',
@@ -221,6 +225,10 @@ function _wireSeenEvents() {
   // Sort + limit
   document.getElementById('seenSortSelect')?.addEventListener('change', (e) => { _seenSort = e.target.value; _drawSeen(); });
   document.getElementById('seenLimitSelect')?.addEventListener('change', (e) => { _seenLimit = parseInt(e.target.value); _drawSeen(); });
+  document.getElementById('seenSortBtn')?.addEventListener('click', () => {
+    _seenSort = _seenSort === 'score' ? 'newest' : 'score';
+    _drawSeen();
+  });
 
   // Card click → expand/collapse tags (no redraw)
   document.querySelectorAll('.jobs-seen-card').forEach(card => {
