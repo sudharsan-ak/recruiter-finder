@@ -405,6 +405,26 @@ document.getElementById('copyAllEmails')?.addEventListener('click', () => {
   });
 });
 
+document.getElementById('copyAllBoth')?.addEventListener('click', () => {
+  const checkedCards = [...resultsDiv.querySelectorAll('.recruiter-check:checked')]
+    .map(cb => cb.closest('.card[data-url]')).filter(Boolean);
+  const targetCards = checkedCards.length
+    ? checkedCards
+    : [...resultsDiv.querySelectorAll('.card[data-url]')].filter(c => c.style.display !== 'none');
+  const urls   = targetCards.map(c => c.dataset.url).filter(Boolean);
+  const emails = targetCards.map(c => c.querySelector('.card-email-btn')?.dataset.email || '').filter(Boolean);
+  if (!urls.length) return;
+  const text = emails.length
+    ? `${urls.join('\n')}\n\n${emails.join('\n')}`
+    : urls.join('\n');
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('copyAllBoth');
+    const orig = btn.textContent;
+    btn.textContent = '✅ Copied!';
+    setTimeout(() => { btn.textContent = orig; }, 1500);
+  });
+});
+
 document.getElementById('filterHasEmail')?.addEventListener('click', () => {
   _emailFilterActive   = !_emailFilterActive;
   if (_emailFilterActive) _noEmailFilterActive = false;
