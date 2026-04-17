@@ -159,7 +159,7 @@ tabMenuBtn.addEventListener('click', (e) => {
 });
 document.addEventListener('click', () => { tabMenuDropdown.style.display = 'none'; });
 
-// Close all dropdowns when user clicks outside the popup window onto the webpage
+// Close all dropdowns + modals when user clicks outside the popup window onto the webpage
 window.addEventListener('blur', () => {
   tabMenuDropdown.style.display = 'none';
   const resultsOpts = document.getElementById('resultsOptionsMenu');
@@ -170,6 +170,10 @@ window.addEventListener('blur', () => {
   if (seenClear) seenClear.style.display = 'none';
   const histOpts = document.getElementById('historyOptionsMenu');
   if (histOpts) histOpts.classList.remove('open');
+  const pasteJd = document.getElementById('pasteJdModal');
+  if (pasteJd) pasteJd.classList.remove('open');
+  const addRecruiter = document.getElementById('addRecruiterModal');
+  if (addRecruiter) addRecruiter.classList.remove('open');
 });
 
 document.getElementById('tabMenuBulk').addEventListener('click', () => {

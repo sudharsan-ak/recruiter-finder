@@ -194,6 +194,30 @@
     </div>
   </div>
 
+  <!-- Paste JD Modal -->
+  <div class="modal-overlay" id="pasteJdModal" tabindex="-1">
+    <div class="modal">
+      <h2>&#9998; Paste JD</h2>
+      <div class="modal-field">
+        <label>Company</label>
+        <input type="text" id="pasteJdCompany" placeholder="e.g. Acme Corp" />
+      </div>
+      <div class="modal-field">
+        <label>Role</label>
+        <input type="text" id="pasteJdRole" placeholder="e.g. Software Engineer" />
+      </div>
+      <div class="modal-field">
+        <label>Job Description</label>
+        <textarea id="pasteJdText" rows="10" placeholder="Paste the full JD here…" style="width:100%;box-sizing:border-box;font-family:inherit;font-size:11px;resize:vertical;border:1px solid #ddd;border-radius:4px;padding:6px"></textarea>
+      </div>
+      <div id="pasteJdStatus" style="font-size:11px;min-height:14px;margin-top:4px"></div>
+      <div class="modal-actions">
+        <button id="pasteJdCancelBtn">Cancel</button>
+        <button id="pasteJdSaveBtn">Save</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Generic confirmation modal -->
   <div class="modal-overlay" id="confirmModal" tabindex="-1">
     <div class="modal">

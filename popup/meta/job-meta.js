@@ -205,6 +205,73 @@ async function handleCopyJd() {
   setTimeout(() => { btn.innerHTML = '&#128203; JD'; }, 2000);
 }
 
+async function handlePasteJd() {
+  const modal = document.getElementById('pasteJdModal');
+  if (!modal) return;
+
+  // Autofill company + role from current state
+  const company = companyEl?.textContent?.trim() || '';
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  let role = '';
+  if (tab) {
+    const details = await getJobDetailsFromPage(tab.id, tab.url);
+    role = details.role || '';
+  }
+
+  document.getElementById('pasteJdCompany').value = company;
+  document.getElementById('pasteJdRole').value = role;
+  document.getElementById('pasteJdText').value = '';
+  document.getElementById('pasteJdStatus').textContent = '';
+  document.getElementById('pasteJdSaveBtn').textContent = 'Save';
+  modal.classList.add('open');
+  setTimeout(() => document.getElementById('pasteJdText').focus(), 50);
+}
+
+async function _savePasteJd() {
+  const company = document.getElementById('pasteJdCompany').value.trim() || 'Unknown Company';
+  const role    = document.getElementById('pasteJdRole').value.trim()    || 'Unknown Role';
+  const text    = document.getElementById('pasteJdText').value.trim();
+  const statusEl = document.getElementById('pasteJdStatus');
+  const saveBtn  = document.getElementById('pasteJdSaveBtn');
+
+  if (!text) {
+    statusEl.style.color = '#c0392b';
+    statusEl.textContent = 'Please paste a JD first.';
+    return;
+  }
+
+  saveBtn.textContent = 'Saving…';
+  saveBtn.disabled = true;
+
+  const ok = await writeJdToLocalHelper({
+    company,
+    role,
+    text,
+    sourceUrl: '',
+    capturedAt: new Date().toISOString(),
+  });
+
+  saveBtn.disabled = false;
+  if (ok) {
+    statusEl.style.color = '#27ae60';
+    statusEl.textContent = '✓ Saved!';
+    setTimeout(() => { document.getElementById('pasteJdModal').classList.remove('open'); }, 800);
+  } else {
+    statusEl.style.color = '#c0392b';
+    statusEl.textContent = 'Failed — is the server running?';
+    saveBtn.textContent = 'Save';
+  }
+}
+
+document.getElementById('pasteJdSaveBtn')?.addEventListener('click', _savePasteJd);
+document.getElementById('pasteJdCancelBtn')?.addEventListener('click', () => {
+  document.getElementById('pasteJdModal').classList.remove('open');
+});
+document.getElementById('pasteJdModal')?.addEventListener('click', (e) => {
+  if (e.target === document.getElementById('pasteJdModal'))
+    document.getElementById('pasteJdModal').classList.remove('open');
+});
+
 async function handleOpenJob() {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   const url = tab?.url || '';
