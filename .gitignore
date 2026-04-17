@@ -1,3 +1,4 @@
 .claude/
 files/
 tools/*.local.txt
+.env

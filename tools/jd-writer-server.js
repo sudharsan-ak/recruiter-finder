@@ -3,8 +3,17 @@ const path = require('path');
 const http = require('http');
 const https = require('https');
 
+// Load .env from repo root
+try {
+  const envFile = fs.readFileSync(path.resolve(__dirname, '../.env'), 'utf8');
+  envFile.split('\n').forEach(line => {
+    const m = line.match(/^([^#=\s]+)\s*=\s*(.*)$/);
+    if (m && !process.env[m[1]]) process.env[m[1]] = m[2].trim();
+  });
+} catch {}
+
 // ── Config ────────────────────────────────────────────────────────────────────
-const GROQ_API_KEY = process.env.GROQ_API_KEY || ''; // set GROQ_API_KEY env var or paste your gsk_... key here
+const GROQ_API_KEY = process.env.GROQ_API_KEY || ''; // set via .env or GROQ_API_KEY env var
 const GROQ_MODEL   = 'llama-3.1-8b-instant';
 // ─────────────────────────────────────────────────────────────────────────────
 
