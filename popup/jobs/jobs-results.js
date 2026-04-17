@@ -318,8 +318,7 @@ function copySelectedJDs() {
   entries.forEach(e => writeJdToLocalHelper({
     company:     e.company,
     role:        e.role,
-    jd:          e.jd,
-    text:        `Company - ${e.company}\nRole - ${e.role}\nJD:\n\n${e.jd}`,
+    text:        e.jd,
     sourceUrl:   e.url,
     capturedAt:  new Date().toISOString(),
   }));

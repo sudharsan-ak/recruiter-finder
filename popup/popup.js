@@ -72,8 +72,8 @@ const bulkResultsDiv = document.getElementById('bulkResults');
 const companyMetaEl = document.getElementById('companyMeta');
 const techStackEl = document.getElementById('techStack');
 
-const autoScanToggle = document.getElementById('autoScanToggle');
-const asStatus = document.getElementById('asStatus');
+// const autoScanToggle = document.getElementById('autoScanToggle');
+// const asStatus = document.getElementById('asStatus');
 
 const scanQueue = [];
 let isScanning = false;
@@ -86,19 +86,19 @@ function saveQueue() {
   chrome.storage.session.set({ manualScanQueue: scanQueue.map(q => q.slug) }).catch(() => {});
 }
 
-chrome.storage.local.get(['autoScanEnabled'], ({ autoScanEnabled }) => {
-  const on = autoScanEnabled === true;
-  autoScanToggle.checked = on;
-  asStatus.textContent = on ? 'ON' : 'OFF';
-  asStatus.classList.toggle('off', !on);
-});
+// chrome.storage.local.get(['autoScanEnabled'], ({ autoScanEnabled }) => {
+//   const on = autoScanEnabled === true;
+//   // autoScanToggle.checked = on;
+//   asStatus.textContent = on ? 'ON' : 'OFF';
+//   asStatus.classList.toggle('off', !on);
+// });
 
-autoScanToggle.addEventListener('change', () => {
-  const on = autoScanToggle.checked;
-  chrome.storage.local.set({ autoScanEnabled: on });
-  asStatus.textContent = on ? 'ON' : 'OFF';
-  asStatus.classList.toggle('off', !on);
-});
+// autoScanToggle.addEventListener('change', () => {
+//   const on = autoScanToggle.checked;
+//   chrome.storage.local.set({ autoScanEnabled: on });
+//   asStatus.textContent = on ? 'ON' : 'OFF';
+//   asStatus.classList.toggle('off', !on);
+// });
 
 function activateTab(activeBtn, activePanel, extraInit) {
   [tabSearchBtn, tabJobsBtn, tabHistoryBtn].forEach(btn => btn.classList.remove('active'));

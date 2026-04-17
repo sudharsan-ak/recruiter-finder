@@ -100,11 +100,7 @@ async function onCompanyChange(slug) {
     errorDiv.style.color = '#0a66c2';
     errorDiv.textContent = '💡 Showing cached results. Click "Re-scan" to fetch fresh data.';
   } else {
-    if (autoScanToggle.checked) {
-      statusBox.textContent = `⚡ Auto-scanning ${slug.replace(/-/g, ' ')} in background...`;
-    } else {
-      statusBox.textContent = `Ready! Click "Find Recruiters" to scan ${slug.replace(/-/g, ' ')}.`;
-    }
+    statusBox.textContent = `Ready! Click "Find Recruiters" to scan ${slug.replace(/-/g, ' ')}.`;
     scanBtn.disabled = false;
     scanBtn.textContent = '🚀 Find Recruiters';
   }

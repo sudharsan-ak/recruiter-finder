@@ -179,8 +179,7 @@ async function handleCopyJd() {
   const payload = {
     company,
     role: role || 'Unknown Role',
-    jd,
-    text,
+    text: jd,
     sourceUrl: tab.url || '',
     capturedAt: new Date().toISOString(),
   };
