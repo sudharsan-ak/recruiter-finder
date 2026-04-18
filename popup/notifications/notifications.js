@@ -1,5 +1,6 @@
 let _profileRecruiter = null;
 let _profileNotifTimer = null;
+let _pendingRemove = null; // { name, url, slug } set when "already in cache" banner shows
 let _obsPending = { slug: null, recruiters: [] };
 let _obsModalSlug = null;
 
@@ -69,6 +70,21 @@ function hideProfileNotif() {
   _profileRecruiter = null;
 }
 
+function showRemoveBanner({ name, url, slug }) {
+  const banner = document.getElementById('removeRecruiterBanner');
+  const label  = document.getElementById('removeRecruiterLabel');
+  if (!banner || !label) return;
+  label.textContent = `Remove ${name} from list?`;
+  _pendingRemove = { name, url, slug };
+  banner.classList.add('visible');
+}
+
+function hideRemoveBanner() {
+  const banner = document.getElementById('removeRecruiterBanner');
+  if (banner) banner.classList.remove('visible');
+  _pendingRemove = null;
+}
+
 function setProfileInlineCompanyEditor(companyName) {
   currentEmployeeCount = null;
   currentVisaStatus = null;
@@ -108,7 +124,10 @@ async function showProfileNotif({ name, title, url, companySlug, companyName, ph
         editableCompany: false,
       });
       clearTimeout(_profileNotifTimer);
-      _profileNotifTimer = setTimeout(hideProfileNotif, 4000);
+      _profileNotifTimer = setTimeout(() => {
+        hideProfileNotif();
+        showRemoveBanner({ name, url, slug: companySlug });
+      }, 4000);
       return;
     }
 
@@ -149,6 +168,18 @@ async function refreshProfileRecruiterState(slug, displayName) {
 globalThis.refreshProfileRecruiterState = refreshProfileRecruiterState;
 
 profileNotifDismiss.addEventListener('click', hideProfileNotif);
+
+document.getElementById('removeRecruiterDismiss')?.addEventListener('click', hideRemoveBanner);
+document.getElementById('removeRecruiterBtn')?.addEventListener('click', async () => {
+  if (!_pendingRemove) return;
+  const { url, slug } = _pendingRemove;
+  hideRemoveBanner();
+  await removeRecruiterFromCache(slug, url);
+  // Remove card from DOM if visible
+  const card = resultsDiv.querySelector(`.card[data-url="${CSS.escape(url)}"]`);
+  if (card) card.remove();
+  statusBox.textContent = 'Recruiter removed.';
+});
 
 profileNotifAltBtn.addEventListener('click', async () => {
   if (!_profileRecruiter || _profileRecruiter.mode !== 'merge_confirm') return;
@@ -289,7 +320,10 @@ async function handleProfileCheckResult(result) {
           showButton: false,
         });
         clearTimeout(_profileNotifTimer);
-        _profileNotifTimer = setTimeout(hideProfileNotif, 4000);
+        _profileNotifTimer = setTimeout(() => {
+          hideProfileNotif();
+          showRemoveBanner({ name, url, slug });
+        }, 4000);
         onCompanyChange(slug);
         return;
       }
