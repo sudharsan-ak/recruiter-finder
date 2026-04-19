@@ -147,10 +147,12 @@ const server = http.createServer((req, res) => {
       if (role && firstLine.toLowerCase() === role.toLowerCase()) {
         body = body.slice(firstLine.length).replace(/^\n+/, '');
       }
-      const header  = `Company - ${company}\nRole - ${role}`;
-      const textToWrite = `${header}\n\n${body}`;
       const existing    = fs.existsSync(outputFile) ? fs.readFileSync(outputFile, 'utf8') : '';
-      const separator   = '\n\n\n\n';
+      const entryCount  = existing.length === 0 ? 0 : (existing.match(/^\d+\./gm) || []).length;
+      const entryNum    = entryCount + 1;
+      const header      = `${entryNum}. Company - ${company}\nRole - ${role}`;
+      const textToWrite = `${header}\n\n${body}`;
+      const separator   = '\n\n\n';
       const nextText    = existing.length === 0
         ? textToWrite
         : `${existing.replace(/\n*$/, '')}${separator}${textToWrite}`;
