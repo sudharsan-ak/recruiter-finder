@@ -51,7 +51,9 @@ async function cleanJdWithGroq(rawText) {
         content: `You are a job description cleaner. Extract and return in this exact order:
 
 1. A brief role summary (1-2 sentences max)
-2. A heading "Skills:" followed by a bullet list of required and preferred skills / tech stack
+2. A heading "Skills:" followed by two sub-sections:
+   - "Required:" with a bullet list of hard requirements (must-have skills / tech)
+   - "Nice to have:" with a bullet list of preferred / bonus skills (omit this sub-section if none mentioned)
 3. Years of experience required (one line, e.g. "Experience: 5+ years")
 4. A heading "Responsibilities:" followed by a bullet list of key responsibilities
 5. Then these three lines back-to-back with NO blank lines between them:
