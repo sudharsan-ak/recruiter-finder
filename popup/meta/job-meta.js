@@ -1,5 +1,5 @@
 const JD_WRITE_ENDPOINT = 'http://127.0.0.1:4545/jd';
-const JD_WRITE_TIMEOUT_MS = 3000;
+const JD_WRITE_TIMEOUT_MS = 8000;
 
 async function writeJdToLocalHelper(payload) {
   const controller = new AbortController();
