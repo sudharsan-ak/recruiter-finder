@@ -38,6 +38,7 @@ function _buildUsernameVariants(fullName) {
     `${first}${last}`,
     `${first[0]}${last}`,
     `${first}${last[0]}`,
+    first,
   ];
 }
 
