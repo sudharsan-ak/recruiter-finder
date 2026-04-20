@@ -229,10 +229,26 @@ body {
   gap: 6px;
 }
 
-#emailCheckInput {
+.email-builder {
   flex: 1;
   min-width: 0;
-  padding: 4px 9px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.email-builder-username-wrap,
+.email-builder-domain-wrap {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+
+.email-builder-username-wrap input,
+.email-builder-domain-wrap input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 4px 7px;
   font-size: 11px;
   border: 1.5px solid #ddd;
   border-radius: 10px;
@@ -241,8 +257,45 @@ body {
   color: #1d1d1d;
   background: #fff;
 }
-#emailCheckInput:focus { border-color: #0a66c2; }
-#emailCheckInput::placeholder { color: #bbb; }
+.email-builder-username-wrap input:focus,
+.email-builder-domain-wrap input:focus { border-color: #0a66c2; }
+.email-builder-username-wrap input::placeholder,
+.email-builder-domain-wrap input::placeholder { color: #bbb; }
+
+.email-builder-at {
+  font-size: 12px;
+  font-weight: 700;
+  color: #555;
+  flex-shrink: 0;
+  padding: 0 1px;
+}
+
+.email-username-dropdown,
+.email-domain-dropdown {
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 0;
+  right: 0;
+  background: #fff;
+  border: 1.5px solid #ddd;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+  z-index: 200;
+  overflow: hidden;
+}
+
+.email-dd-item {
+  padding: 5px 9px;
+  font-size: 11px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #1d1d1d;
+}
+.email-dd-item:hover { background: #f0f5ff; }
+.email-dd-domain { font-weight: 600; }
+.email-dd-company { color: #888; font-size: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 #emailCheckBtn {
   flex-shrink: 0;

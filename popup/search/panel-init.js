@@ -116,6 +116,7 @@ async function initPanel() {
       resetSearchCompanyState();
       _lastProfilePollUrl = tab.url;
       requestProfileCheck(tab.id, true);
+      globalThis.initEmailBuilder?.();
     } else {
       currentSlug = null;
       companyEl.textContent = '';
@@ -199,5 +200,6 @@ async function initPanel() {
 
   if (tab.url?.match(/linkedin\.com\/in\/[^/?#]+/)) {
     requestProfileCheck(tab.id);
+    globalThis.initEmailBuilder?.();
   }
 }

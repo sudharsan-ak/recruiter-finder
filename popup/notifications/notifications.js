@@ -115,6 +115,8 @@ async function showProfileNotif({ name, title, url, companySlug, companyName, ph
     const alreadyIn = cached.recruiters.some(r => normalizeUrl(r.url) === normalizeUrl(url));
     if (alreadyIn) {
       _profileRecruiter = null;
+      const existingEmail = cached.recruiters.find(r => normalizeUrl(r.url) === normalizeUrl(url))?.email || '';
+      globalThis.initEmailBuilderFromName?.(name, existingEmail);
       statusBox.textContent = `Checked profile: ${name} is already in your ${companyName} cache.`;
       errorDiv.style.display = 'none';
       setProfileNotif({
@@ -314,6 +316,8 @@ async function handleProfileCheckResult(result) {
       if (entry.recruiters?.some(r => normalizeUrl(r.url) === normalizeUrl(url))) {
         const displayName = entry.displayName || slug.replace(/-/g, ' ');
         errorDiv.style.display = 'none';
+        const existingEmail = entry.recruiters?.find(r => normalizeUrl(r.url) === normalizeUrl(url))?.email || '';
+        globalThis.initEmailBuilderFromName?.(name, existingEmail);
         setProfileNotif({
           text: `${name} is already in your ${displayName} cache.`,
           subtext: '',
@@ -332,6 +336,7 @@ async function handleProfileCheckResult(result) {
 
   if (status === 'recruiter_found') {
     errorDiv.style.display = 'none';
+    globalThis.initEmailBuilderFromName?.(name);
     showProfileNotif(result);
     return;
   }

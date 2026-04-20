@@ -40,7 +40,17 @@
       <div id="progressBar"><div id="progressFill"></div></div>
       <div class="auto-scan-row">
         <button id="scanBtn">🚀 Find Recruiters</button>
-        <input type="text" id="emailCheckInput" placeholder="Paste email…" autocomplete="off" />
+        <div class="email-builder" id="emailBuilder">
+          <div class="email-builder-username-wrap">
+            <input type="text" id="emailUsername" placeholder="username" autocomplete="off" />
+            <div class="email-username-dropdown" id="emailUsernameDropdown" style="display:none"></div>
+          </div>
+          <span class="email-builder-at">@</span>
+          <div class="email-builder-domain-wrap">
+            <input type="text" id="emailDomain" placeholder="domain.com" autocomplete="off" />
+            <div class="email-domain-dropdown" id="emailDomainDropdown" style="display:none"></div>
+          </div>
+        </div>
         <button id="emailCheckBtn" title="Save email to matched recruiter">✓</button>
         <!-- <div class="auto-scan-controls">
           <span class="auto-scan-label">
