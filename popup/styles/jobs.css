@@ -645,6 +645,16 @@
 .jobs-score-partial  { color: #0a66c2; background: #e8f0fe; }
 .jobs-score-full     { color: #166534; background: #dcfce7; }
 
+.jobs-visa-badge {
+  font-size: 10px;
+  font-weight: 600;
+  border-radius: 8px;
+  padding: 1px 6px;
+  flex-shrink: 0;
+}
+.jobs-visa-no  { color: #991b1b; background: #fee2e2; }
+.jobs-visa-yes { color: #166534; background: #dcfce7; }
+
 .jobs-match-tag {
   background: #dcfce7;
   color: #166534;

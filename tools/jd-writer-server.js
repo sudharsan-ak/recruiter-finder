@@ -105,13 +105,120 @@ Return only plain text. No commentary.`,
   });
 }
 
+async function answerQuestionWithGroq(question, profileText, jdText, model) {
+  if (!GROQ_API_KEY || GROQ_API_KEY === 'YOUR_GROQ_API_KEY') return null;
+
+  const jdSection = jdText
+    ? `\n\nJob Description (for context — do not quote verbatim):\n${jdText.slice(0, 3000)}`
+    : '';
+
+  const body = JSON.stringify({
+    model: model || GROQ_MODEL,
+    messages: [
+      {
+        role: 'system',
+        content: `You ghostwrite job application answers for a real person. Write exactly how a human would type it — casual, direct, confident, no fluff. Use their actual experience from the profile. 2-3 sentences max unless the question genuinely needs more. Rules: no "I am passionate", no "leverage", no "synergy", no corporate speak, no filler phrases like "I believe" or "I feel". Don't start with "I". Don't sound like ChatGPT wrote it. Just answer the question plainly like you're talking to someone.`,
+      },
+      {
+        role: 'user',
+        content: `My profile:\n${profileText}${jdSection}\n\nQuestion: ${question}`,
+      },
+    ],
+    temperature: 0.7,
+    max_tokens: 300,
+  });
+
+  return new Promise((resolve) => {
+    const req = https.request({
+      hostname: 'api.groq.com',
+      path: '/openai/v1/chat/completions',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${GROQ_API_KEY}`,
+        'Content-Length': Buffer.byteLength(body),
+      },
+    }, (res) => {
+      let data = '';
+      res.setEncoding('utf8');
+      res.on('data', chunk => { data += chunk; });
+      res.on('end', () => {
+        try {
+          const json = JSON.parse(data);
+          const answer = json?.choices?.[0]?.message?.content?.trim();
+          if (!answer) console.error('[Groq/answer] Response:', JSON.stringify(json).slice(0, 300));
+          resolve(answer || null);
+        } catch (e) {
+          console.error('[Groq/answer] Parse error:', e.message, data.slice(0, 200));
+          resolve(null);
+        }
+      });
+    });
+
+    req.on('error', (e) => { console.error('[Groq/answer] Request error:', e.message); resolve(null); });
+    req.setTimeout(15000, () => { req.destroy(); resolve(null); });
+    req.write(body);
+    req.end();
+  });
+}
+
 const server = http.createServer((req, res) => {
   if (req.method === 'OPTIONS') {
     send(res, 200, { ok: true });
     return;
   }
 
-  if (req.method !== 'POST' || req.url !== '/jd') {
+  const urlPath = req.url.split('?')[0].replace(/\/$/, '') || '/';
+
+  if (req.method === 'POST' && urlPath === '/answer-prep') {
+    let raw = '';
+    req.setEncoding('utf8');
+    req.on('data', chunk => { raw += chunk; if (raw.length > 2 * 1024 * 1024) req.destroy(); });
+    req.on('end', async () => {
+      try {
+        const payload = raw ? JSON.parse(raw) : {};
+        const rawJD   = typeof payload.rawJD === 'string' ? payload.rawJD.trim() : '';
+        if (!rawJD) { send(res, 400, { ok: false, error: 'Missing rawJD' }); return; }
+        const cleaned = await cleanJdWithGroq(rawJD);
+        if (!cleaned) { send(res, 500, { ok: false, error: 'Groq unavailable' }); return; }
+        console.log(`[${new Date().toISOString()}] Prep-cleaned JD for answer (${rawJD.length} → ${cleaned.length} chars)`);
+        send(res, 200, { ok: true, cleaned });
+      } catch (error) {
+        send(res, 500, { ok: false, error: error instanceof Error ? error.message : String(error) });
+      }
+    });
+    req.on('error', error => send(res, 500, { ok: false, error: error.message }));
+    return;
+  }
+
+  if (req.method === 'POST' && urlPath === '/answer') {
+    let raw = '';
+    req.setEncoding('utf8');
+    req.on('data', chunk => { raw += chunk; if (raw.length > 1024 * 1024) req.destroy(); });
+    req.on('end', async () => {
+      try {
+        const payload     = raw ? JSON.parse(raw) : {};
+        const question    = typeof payload.question    === 'string' ? payload.question.trim()    : '';
+        const profileText = typeof payload.profileText === 'string' ? payload.profileText.trim() : '';
+        const jdText      = typeof payload.jdText      === 'string' ? payload.jdText.trim()      : '';
+        const model       = typeof payload.model       === 'string' ? payload.model.trim()       : '';
+        if (!question || !profileText) {
+          send(res, 400, { ok: false, error: 'Missing question or profileText' });
+          return;
+        }
+        const answer = await answerQuestionWithGroq(question, profileText, jdText, model);
+        if (!answer) { send(res, 500, { ok: false, error: 'Groq unavailable or no key set' }); return; }
+        console.log(`[${new Date().toISOString()}] Answered question (${question.length} chars)`);
+        send(res, 200, { ok: true, answer });
+      } catch (error) {
+        send(res, 500, { ok: false, error: error instanceof Error ? error.message : String(error) });
+      }
+    });
+    req.on('error', error => send(res, 500, { ok: false, error: error.message }));
+    return;
+  }
+
+  if (req.method !== 'POST' || urlPath !== '/jd') {
     send(res, 404, { ok: false, error: 'Not found' });
     return;
   }
@@ -177,7 +284,10 @@ const server = http.createServer((req, res) => {
 });
 
 server.listen(port, '127.0.0.1', () => {
-  console.log(`JD writer listening at http://127.0.0.1:${port}/jd`);
+  console.log(`JD writer listening at http://127.0.0.1:${port}`);
+  console.log(`  POST /jd          — clean + write JD to file`);
+  console.log(`  POST /answer-prep — pre-clean JD for answer modal`);
+  console.log(`  POST /answer      — answer application questions`);
   console.log(`Writing to: ${outputFile}`);
-  console.log(`Groq cleaning: ${GROQ_API_KEY !== 'YOUR_GROQ_API_KEY' ? 'enabled' : 'DISABLED (no key set)'}`);
+  console.log(`Groq: ${GROQ_API_KEY ? 'enabled' : 'DISABLED (no key set)'}`);
 });

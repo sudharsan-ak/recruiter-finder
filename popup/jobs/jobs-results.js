@@ -120,6 +120,13 @@ function _renderResultCard(r) {
     ? `<span class="jobs-score ${score === 0 ? 'jobs-score-none' : score === stackLen ? 'jobs-score-full' : 'jobs-score-partial'}">${score}/${stackLen} match</span>`
     : '';
 
+  const visaStatus = r.visaStatus || detectVisaStatus(r.jdText || '');
+  const visaBadge = visaStatus === 'no'
+    ? `<span class="jobs-visa-badge jobs-visa-no" title="No visa sponsorship">🚫 No Visa</span>`
+    : visaStatus === 'yes'
+      ? `<span class="jobs-visa-badge jobs-visa-yes" title="Visa sponsorship available">✅ Visa OK</span>`
+      : '';
+
   let repostBadge = '';
   if (r.isFromHistory) {
     const d = formatSeenDate(r.firstSeenAt);
@@ -151,6 +158,7 @@ function _renderResultCard(r) {
         </div>
         <div class="jobs-result-meta">
           ${scoreLabel}
+          ${visaBadge}
           ${expanded ? `
             ${r.matched.map(t => `<span class="jobs-match-tag">${t}</span>`).join('')}
             ${_jobStack.filter(t => !r.matched.includes(t)).map(t =>

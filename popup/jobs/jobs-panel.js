@@ -27,6 +27,7 @@ function _drawJobsChrome() {
         <button class="jobs-menu-btn" id="jobsOptionsBtn">≡ Options</button>
         <div class="jobs-menu-dropdown" id="jobsOptionsDropdown" style="display:none">
           <button class="jobs-menu-item" id="jobsMyStackBtn">🗂 My Stack</button>
+          <button class="jobs-menu-item" id="jobsSettingsBtn">⚙ Settings</button>
           <div class="jobs-menu-sep"></div>
           <button class="jobs-menu-item ${_filterMatchingOnly ? 'jobs-menu-item-active' : ''}"
             id="jobsFilterMatchBtn">
@@ -81,6 +82,13 @@ function _drawJobsChrome() {
     e.stopPropagation();
     optDd.style.display = 'none';
     _openStackModal();
+  });
+
+  // Settings modal
+  document.getElementById('jobsSettingsBtn')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    optDd.style.display = 'none';
+    _openSettingsModal();
   });
 
   // Matching only toggle
@@ -180,6 +188,18 @@ function _addStackTag() {
   _renderStackModal();
 }
 
+// ── Settings Modal ────────────────────────────────────────────────────────────
+
+async function _openSettingsModal() {
+  const modal = document.getElementById('myProfileModal');
+  if (!modal) return;
+  const d = await new Promise(r => chrome.storage.local.get(['myProfileText', 'myGroqKey', 'myGroqModel'], r));
+  document.getElementById('myProfileTextarea').value  = d.myProfileText || '';
+  document.getElementById('myGroqKeyInput').value     = d.myGroqKey     || '';
+  document.getElementById('myGroqModelSelect').value  = d.myGroqModel   || 'llama-3.3-70b-versatile';
+  modal.classList.add('open');
+}
+
 // ── Modal close + add button (wired once at load time) ───────────────────────
 
 document.getElementById('jobsStackModalCloseBtn')?.addEventListener('click', () => {
@@ -191,6 +211,22 @@ document.getElementById('jobsStackModal')?.addEventListener('click', (e) => {
     document.getElementById('jobsStackModal').style.display = 'none';
 });
 document.getElementById('jobsStackModalAddBtn')?.addEventListener('click', _addStackTag);
+
+// Settings modal
+document.getElementById('myProfileSaveBtn')?.addEventListener('click', async () => {
+  const text      = document.getElementById('myProfileTextarea').value;
+  const groqKey   = document.getElementById('myGroqKeyInput').value.trim();
+  const groqModel = document.getElementById('myGroqModelSelect').value;
+  await chrome.storage.local.set({ myProfileText: text, myGroqKey: groqKey, myGroqModel: groqModel });
+  document.getElementById('myProfileModal').classList.remove('open');
+});
+document.getElementById('myProfileCancelBtn')?.addEventListener('click', () => {
+  document.getElementById('myProfileModal').classList.remove('open');
+});
+document.getElementById('myProfileModal')?.addEventListener('click', (e) => {
+  if (e.target === document.getElementById('myProfileModal'))
+    document.getElementById('myProfileModal').classList.remove('open');
+});
 
 // ── Live updates from storage ─────────────────────────────────────────────────
 

@@ -123,3 +123,71 @@ async function clearSeenByPredicate(predicate) {
 function formatSeenDate(ts) {
   return new Date(ts).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
+
+// ── Visa sponsorship detection ────────────────────────────────────────────────
+
+const _NO_VISA_PATTERNS = [
+  /authorized?\s+to\s+work\s+in\s+the\s+u\.?s\.?\s+without.*visa/i,
+  /no\s+visa\s+sponsorship/i,
+  /visa\s+sponsorship.*not\s+(available|offered|provided)/i,
+  /not\s+(able\s+to|in\s+a\s+position\s+to)?\s*sponsor/i,
+  /cannot\s+sponsor/i,
+  /unable\s+to\s+sponsor/i,
+  /we\s+do\s+not\s+sponsor/i,
+  /does\s+not\s+(offer|provide)\s+sponsorship/i,
+  /without\s+sponsorship/i,
+  /\bno\s+sponsorship\b/i,
+  /sponsorship\s+is\s+not\s+available/i,
+  /must\s+not\s+require\s+(visa|sponsorship)/i,
+  /security\s+clearance\s+required/i,
+  /must\s+(hold|have|possess)\s+(an?\s+)?(active|current|valid)\s+.*(clearance|secret|ts\/sci)/i,
+  /active\s+.*(secret|top\s+secret|ts\/sci|clearance)/i,
+  /clearance\s+required/i,
+  /must\s+be\s+eligible\s+for\s+.*(clearance|secret)/i,
+  /eligible\s+for\s+security\s+clearance/i,
+  /u\.?s\.?\s+citizens?\s+only/i,
+  /\bcitizens?\s+only\b/i,
+  /must\s+be\s+(a\s+)?u\.?s\.?\s+citizen/i,
+  /work\s+authorization\s+(in|for)\s+the\s+u\.?s\.?/i,
+  /will\s+not\s+(provide|offer)\s+immigration\s+sponsorship/i,
+  /not\s+(provide|offer|support)\s+(immigration|visa)\s+sponsorship/i,
+  /does\s+not\s+(provide|offer)\s+.*sponsorship/i,
+  /permanent\s+work\s+authorization/i,
+  /without\s+employer\s+(assistance|support|sponsorship)/i,
+  /must\s+have\s+(authorization|authorization)\s+to\s+work/i,
+  /not\s+eligible\s+to\s+sponsor/i,
+  /requires?\s+work\s+authorization/i,
+  /must\s+be\s+legally\s+authorized/i,
+  /authorized\s+to\s+work\s+without\s+(employer|company)/i,
+  /employment\s+eligibility\s+verification/i,
+  /not\s+sponsor\s+(work\s+)?visas?/i,
+  /applicants?\s+must\s+be\s+eligible\s+to\s+work/i,
+  /must\s+be\s+eligible\s+to\s+work\s+in\s+the\s+u\.?s\.?/i,
+];
+
+const _YES_VISA_PATTERNS = [
+  /visa\s+sponsorship\s+(is\s+)?(available|offered|provided)/i,
+  /we\s+(do\s+)?(offer|provide|support)\s+visa\s+sponsorship/i,
+  /will\s+sponsor\s+.*(visa|h[-\s]?1b|work\s+authorization)/i,
+  /sponsorship\s+(is\s+)?available/i,
+  /open\s+to\s+sponsor/i,
+  /we\s+sponsor\s+(h[-\s]?1b|work\s+visa)/i,
+  /h[-\s]?1b\s+sponsorship\s+(is\s+)?(available|offered|provided|considered)/i,
+  /will\s+(provide|offer|support)\s+immigration\s+sponsorship/i,
+  /willing\s+to\s+sponsor/i,
+  /able\s+to\s+sponsor/i,
+  /sponsorship\s+(will\s+be\s+)?(considered|offered)/i,
+  /immigration\s+assistance\s+(is\s+)?(provided|available|offered)/i,
+  /relocation\s+and\s+visa\s+support/i,
+  /we\s+support\s+(visa|immigration)/i,
+  /sponsorship\s+for\s+qualified\s+candidates/i,
+];
+
+function detectVisaStatus(text) {
+  if (!text) return 'na';
+  if (_NO_VISA_PATTERNS.some(p => p.test(text))) return 'no';
+  if (_YES_VISA_PATTERNS.some(p => p.test(text))) return 'yes';
+  return 'na';
+}
+
+globalThis.detectVisaStatus = detectVisaStatus;

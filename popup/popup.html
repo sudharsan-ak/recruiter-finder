@@ -233,6 +233,48 @@
     </div>
   </div>
 
+  <!-- My Profile / Settings Modal -->
+  <div class="modal-overlay" id="myProfileModal" tabindex="-1">
+    <div class="modal">
+      <h2>⚙ Settings</h2>
+      <div class="modal-field">
+        <label>Groq API Key <span style="font-weight:400;color:#999">(fallback when local server is not running)</span></label>
+        <input type="password" id="myGroqKeyInput" placeholder="gsk_…" autocomplete="off" />
+      </div>
+      <div class="modal-field">
+        <label>Model <span style="font-weight:400;color:#999">(used for answering questions)</span></label>
+        <select id="myGroqModelSelect" style="width:100%;padding:6px 8px;border:1.5px solid #ccc;border-radius:6px;font-size:11px;font-family:inherit;outline:none">
+          <option value="llama-3.3-70b-versatile">Llama 3.3 70B — best quality (free)</option>
+          <option value="llama-3.1-8b-instant">Llama 3.1 8B — fastest (free)</option>
+          <option value="gemma2-9b-it">Gemma 2 9B — Google (free)</option>
+          <option value="mixtral-8x7b-32768">Mixtral 8x7B — long context (free)</option>
+        </select>
+      </div>
+      <div class="modal-field">
+        <label>Your profile <span style="font-weight:400;color:#999">(used by AI to answer job application questions)</span></label>
+        <textarea id="myProfileTextarea" rows="11" placeholder="Paste your profile info here — skills, years of experience, background, what you're looking for…" style="width:100%;box-sizing:border-box;font-family:inherit;font-size:11px;resize:vertical;border:1px solid #ddd;border-radius:4px;padding:6px"></textarea>
+      </div>
+      <div class="modal-actions">
+        <button id="myProfileCancelBtn">Cancel</button>
+        <button id="myProfileSaveBtn">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Answer Question Modal -->
+  <div class="modal-overlay" id="answerModal" tabindex="-1">
+    <div class="modal answer-modal">
+      <h2>&#10022; Answer Questions</h2>
+      <div id="answerQuestionsList"></div>
+      <button id="answerAddQuestionBtn">+ Add Question</button>
+      <div id="answerStatus" style="font-size:11px;min-height:14px;margin-top:6px;color:#666"></div>
+      <div class="modal-actions">
+        <button id="answerCancelBtn">Close</button>
+        <button id="answerGenerateBtn">Generate All</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Generic confirmation modal -->
   <div class="modal-overlay" id="confirmModal" tabindex="-1">
     <div class="modal">
@@ -326,6 +368,7 @@
   <script src="jobs/jobs-results.js"></script>
   <script src="jobs/jobs-seen.js"></script>
   <script src="jobs/jobs-panel.js"></script>
+  <script src="jobs/answer-question.js"></script>
   <script src="scanner/scanner.js"></script>
   <script src="search/email-check.js"></script>
   <script src="search/panel-init.js"></script>

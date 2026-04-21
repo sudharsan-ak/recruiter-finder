@@ -41,12 +41,13 @@ function updateCompanyMetaDisplay() {
   }
   if (parts.length > 0) {
     let html = parts.join('<span class="meta-sep"> | </span>');
-    if (_onJobPage) html += `<button class="copy-jd-chip" id="copyJdBtn">&#128203; JD</button><button class="copy-jd-chip" id="pasteJdBtn">&#9998; Paste JD</button><a class="copy-jd-chip" id="openJobBtn" href="${_currentJobUrl}" target="_blank">&#8599; Open</a>`;
+    if (_onJobPage) html += `<button class="copy-jd-chip" id="copyJdBtn">&#128203; JD</button><button class="copy-jd-chip" id="pasteJdBtn">&#9998; Paste JD</button><button class="copy-jd-chip" id="answerQuestionBtn">&#10022; Answer</button><a class="copy-jd-chip" id="openJobBtn" href="${_currentJobUrl}" target="_blank">&#8599; Open</a>`;
     companyMetaEl.innerHTML = html;
     companyMetaEl.style.display = 'flex';
     if (_onJobPage) {
       document.getElementById('copyJdBtn').addEventListener('click', handleCopyJd);
       document.getElementById('pasteJdBtn').addEventListener('click', handlePasteJd);
+      document.getElementById('answerQuestionBtn').addEventListener('click', () => globalThis.openAnswerModal?.());
     }
 
     const companyInput = companyMetaEl.querySelector('.meta-company-input');

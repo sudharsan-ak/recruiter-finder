@@ -174,6 +174,10 @@ window.addEventListener('blur', () => {
   if (pasteJd) pasteJd.classList.remove('open');
   const addRecruiter = document.getElementById('addRecruiterModal');
   if (addRecruiter) addRecruiter.classList.remove('open');
+  const myProfile = document.getElementById('myProfileModal');
+  if (myProfile) myProfile.classList.remove('open');
+  const answerModal = document.getElementById('answerModal');
+  if (answerModal) answerModal.classList.remove('open');
 });
 
 document.getElementById('tabMenuBulk').addEventListener('click', () => {
