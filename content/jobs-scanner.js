@@ -284,16 +284,17 @@
     }
 
     _scanning = false;
-    const s = await new Promise(r => chrome.storage.local.get(['jobScanState'], r));
-    await chrome.storage.local.set({
-      jobScanState: { ...s.jobScanState, running: false },
-    });
-
-    try { chrome.runtime.sendMessage({ action: 'jobScanDone' }).catch(() => {}); } catch {}
+    try {
+      const s = await new Promise(r => chrome.storage.local.get(['jobScanState'], r));
+      await chrome.storage.local.set({
+        jobScanState: { ...s.jobScanState, running: false },
+      });
+      try { chrome.runtime.sendMessage({ action: 'jobScanDone' }).catch(() => {}); } catch {}
+    } catch {}
   }
 
   chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
-    if (msg.action === 'startJobScan') scanJobs(msg.maxJobs || Infinity);
+    if (msg.action === 'startJobScan') { _scanning = false; _stopRequested = false; scanJobs(msg.maxJobs || Infinity); }
     if (msg.action === 'stopJobScan') { _stopRequested = true; _scanning = false; }
     if (msg.action === 'getVisibleJobIds') {
       const ids = [...document.querySelectorAll('.job-card-container--clickable')]
