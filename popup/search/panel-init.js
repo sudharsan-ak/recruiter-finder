@@ -70,6 +70,9 @@ async function initPanel() {
   const url = tab?.url || '';
   resetProfileUiState();
 
+  document.getElementById('emailBuilder').style.display = 'none';
+  document.getElementById('emailCheckBtn').style.display = 'none';
+
   if (!url.includes('linkedin.com')) {
     let host = '';
     try { host = new URL(url).hostname; } catch (e) {}
@@ -116,6 +119,8 @@ async function initPanel() {
       resetSearchCompanyState();
       _lastProfilePollUrl = tab.url;
       requestProfileCheck(tab.id, true);
+      document.getElementById('emailBuilder').style.display = '';
+      document.getElementById('emailCheckBtn').style.display = '';
       globalThis.initEmailBuilder?.();
     } else {
       currentSlug = null;
@@ -200,6 +205,8 @@ async function initPanel() {
 
   if (tab.url?.match(/linkedin\.com\/in\/[^/?#]+/)) {
     requestProfileCheck(tab.id);
+    document.getElementById('emailBuilder').style.display = '';
+    document.getElementById('emailCheckBtn').style.display = '';
     globalThis.initEmailBuilder?.();
   }
 }
