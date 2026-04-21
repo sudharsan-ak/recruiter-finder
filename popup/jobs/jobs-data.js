@@ -87,7 +87,7 @@ function matchStack(jdText, stack) {
       ? TECH_PATTERNS.find(([label]) => label === tag)
       : null;
     if (pat) return new RegExp(pat[1], pat[2]).test(jdText);
-    return jdText.toLowerCase().includes(tag.toLowerCase());
+    return new RegExp(`\\b${tag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i').test(jdText);
   });
 }
 
