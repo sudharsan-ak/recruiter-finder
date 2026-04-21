@@ -1,4 +1,5 @@
 .claude/
 files/
 tools/*.local.txt
+tools/my-profile.txt
 .env
