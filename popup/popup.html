@@ -23,6 +23,7 @@
         <button id="tabMenuBtn" title="More options">☰</button>
         <div id="tabMenuDropdown" style="display:none">
           <button class="tab-menu-item" id="tabMenuBulk">📋 Bulk Scan</button>
+          <button class="tab-menu-item" id="tabMenuSettings">⚙ Settings</button>
         </div>
       </div>
     </div>
@@ -265,6 +266,13 @@
   <div class="modal-overlay" id="answerModal" tabindex="-1">
     <div class="modal answer-modal">
       <h2>&#10022; Answer Questions</h2>
+      <div id="answerJdSection">
+        <button id="answerJdToggle" class="answer-jd-toggle">&#128196; Paste JD <span id="answerJdBadge"></span></button>
+        <div id="answerJdInputWrap" style="display:none">
+          <textarea id="answerJdInput" rows="5" placeholder="Paste the full job description here…"></textarea>
+          <button id="answerJdSetBtn">✓ Use this JD</button>
+        </div>
+      </div>
       <div id="answerQuestionsList"></div>
       <button id="answerAddQuestionBtn">+ Add Question</button>
       <div id="answerStatus" style="font-size:11px;min-height:14px;margin-top:6px;color:#666"></div>

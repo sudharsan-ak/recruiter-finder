@@ -27,7 +27,6 @@ function _drawJobsChrome() {
         <button class="jobs-menu-btn" id="jobsOptionsBtn">≡ Options</button>
         <div class="jobs-menu-dropdown" id="jobsOptionsDropdown" style="display:none">
           <button class="jobs-menu-item" id="jobsMyStackBtn">🗂 My Stack</button>
-          <button class="jobs-menu-item" id="jobsSettingsBtn">⚙ Settings</button>
           <div class="jobs-menu-sep"></div>
           <button class="jobs-menu-item ${_filterMatchingOnly ? 'jobs-menu-item-active' : ''}"
             id="jobsFilterMatchBtn">
@@ -84,12 +83,6 @@ function _drawJobsChrome() {
     _openStackModal();
   });
 
-  // Settings modal
-  document.getElementById('jobsSettingsBtn')?.addEventListener('click', (e) => {
-    e.stopPropagation();
-    optDd.style.display = 'none';
-    _openSettingsModal();
-  });
 
   // Matching only toggle
   document.getElementById('jobsFilterMatchBtn')?.addEventListener('click', (e) => {
@@ -190,7 +183,7 @@ function _addStackTag() {
 
 // ── Settings Modal ────────────────────────────────────────────────────────────
 
-async function _openSettingsModal() {
+globalThis._openSettingsModal = async function _openSettingsModal() {
   const modal = document.getElementById('myProfileModal');
   if (!modal) return;
   const d = await new Promise(r => chrome.storage.local.get(['myProfileText', 'myGroqKey', 'myGroqModel'], r));

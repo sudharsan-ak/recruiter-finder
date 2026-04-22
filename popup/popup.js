@@ -180,6 +180,11 @@ window.addEventListener('blur', () => {
   if (answerModal) answerModal.classList.remove('open');
 });
 
+document.getElementById('tabMenuSettings').addEventListener('click', () => {
+  tabMenuDropdown.style.display = 'none';
+  globalThis._openSettingsModal?.();
+});
+
 document.getElementById('tabMenuBulk').addEventListener('click', () => {
   _prevTabBtn = [tabSearchBtn, tabJobsBtn, tabHistoryBtn].find(b => b.classList.contains('active')) || tabSearchBtn;
   _prevPanel = [searchPanel, jobsPanel, historyPanel].find(p => p.classList.contains('active')) || searchPanel;

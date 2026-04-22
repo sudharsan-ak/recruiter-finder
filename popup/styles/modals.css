@@ -309,6 +309,54 @@
 }
 #answerAddQuestionBtn:hover { background: #e8f0fe; }
 
+/* Answer modal — JD paste section */
+#answerJdSection { margin-bottom: 8px; }
+.answer-jd-toggle {
+  background: none;
+  border: 1.5px dashed #ccc;
+  color: #555;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+}
+.answer-jd-toggle:hover { border-color: #0a66c2; color: #0a66c2; }
+#answerJdBadge { color: #16a34a; margin-left: 4px; }
+#answerJdInputWrap {
+  margin-top: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+#answerJdInput {
+  width: 100%;
+  box-sizing: border-box;
+  font-family: inherit;
+  font-size: 11px;
+  border: 1.5px solid #ccc;
+  border-radius: 6px;
+  padding: 6px;
+  resize: vertical;
+  outline: none;
+}
+#answerJdInput:focus { border-color: #0a66c2; }
+#answerJdSetBtn {
+  align-self: flex-end;
+  background: #0a66c2;
+  color: white;
+  border: none;
+  padding: 4px 14px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+#answerJdSetBtn:hover { background: #004182; }
+#answerJdSetBtn:disabled { background: #aaa; cursor: default; }
+
 #addRecruiterBtn {
   background: white;
   color: #0a66c2;

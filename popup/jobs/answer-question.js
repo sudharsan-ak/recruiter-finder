@@ -3,9 +3,10 @@
 const ANSWER_SERVER   = 'http://127.0.0.1:4545';
 const ANSWER_GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
-let _cleanedJD   = '';
-let _jdPrepReady = false;
-let _answerQCount = 0; // tracks question row IDs
+let _cleanedJD    = '';
+let _jdPrepReady  = false;
+let _answerQCount = 0;
+let _manualJD     = ''; // raw JD pasted manually by user
 
 async function _getGroqModel() {
   const d = await new Promise(r => chrome.storage.local.get(['myGroqModel'], r));
@@ -96,15 +97,20 @@ globalThis.openAnswerModal = async function () {
   const modal = document.getElementById('answerModal');
   if (!modal) return;
 
-  _cleanedJD   = '';
-  _jdPrepReady = false;
+  _cleanedJD    = '';
+  _jdPrepReady  = false;
+  _manualJD     = '';
   _answerQCount = 0;
-  document.getElementById('answerQuestionsList').innerHTML = '';
-  document.getElementById('answerStatus').textContent = '⏳ Preparing JD…';
+  document.getElementById('answerQuestionsList').innerHTML  = '';
+  document.getElementById('answerJdInput').value            = '';
+  document.getElementById('answerJdInputWrap').style.display = 'none';
+  document.getElementById('answerJdBadge').textContent      = '';
+  document.getElementById('answerStatus').textContent       = '⏳ Checking JD cache…';
 
   modal.classList.add('open');
-  _addQuestionRow(); // start with one empty row
+  _addQuestionRow();
 
+  // Try cache from current tab
   const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
   const m = (activeTab?.url || '').match(/currentJobId=(\d+)|\/jobs\/view\/(\d+)/);
   const jobId = m ? (m[1] || m[2]) : null;
@@ -115,13 +121,14 @@ globalThis.openAnswerModal = async function () {
 
   if (!rawJD) {
     _jdPrepReady = true;
-    document.getElementById('answerStatus').textContent = '⚠ No cached JD — answers will use profile only.';
+    document.getElementById('answerStatus').textContent = '⚠ No cached JD — paste one above or answers will use profile only.';
     return;
   }
 
   _cleanedJD   = await _prepareJD(rawJD, groqKey);
   _jdPrepReady = true;
-  document.getElementById('answerStatus').textContent = '✓ JD ready. Add your questions and click Generate All.';
+  document.getElementById('answerJdBadge').textContent = '✓';
+  document.getElementById('answerStatus').textContent  = '✓ JD ready from cache. Add your questions and click Generate All.';
 };
 
 // ── Generate all answers ──────────────────────────────────────────────────────
@@ -207,6 +214,30 @@ async function _generateAll() {
 }
 
 // ── Wire buttons ──────────────────────────────────────────────────────────────
+
+// JD toggle
+document.getElementById('answerJdToggle')?.addEventListener('click', () => {
+  const wrap = document.getElementById('answerJdInputWrap');
+  wrap.style.display = wrap.style.display === 'none' ? '' : 'none';
+});
+
+// Set manual JD
+document.getElementById('answerJdSetBtn')?.addEventListener('click', async () => {
+  const raw = document.getElementById('answerJdInput').value.trim();
+  if (!raw) return;
+  document.getElementById('answerStatus').textContent = '⏳ Cleaning JD…';
+  document.getElementById('answerJdSetBtn').disabled = true;
+
+  const d = await new Promise(r => chrome.storage.local.get(['myGroqKey'], r));
+  const groqKey = (d.myGroqKey || '').trim();
+  _manualJD  = raw;
+  _cleanedJD = await _prepareJD(raw, groqKey);
+
+  document.getElementById('answerJdBadge').textContent      = '✓';
+  document.getElementById('answerJdInputWrap').style.display = 'none';
+  document.getElementById('answerStatus').textContent        = '✓ JD ready. Add your questions and click Generate All.';
+  document.getElementById('answerJdSetBtn').disabled         = false;
+});
 
 document.getElementById('answerGenerateBtn')?.addEventListener('click', _generateAll);
 document.getElementById('answerAddQuestionBtn')?.addEventListener('click', () => _addQuestionRow());
