@@ -3,10 +3,11 @@
 const ANSWER_SERVER   = 'http://127.0.0.1:4545';
 const ANSWER_GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
-let _cleanedJD    = '';
-let _jdPrepReady  = false;
-let _answerQCount = 0;
-let _manualJD     = ''; // raw JD pasted manually by user
+let _cleanedJD      = '';
+let _jdPrepReady    = false;
+let _answerQCount   = 0;
+let _manualJD       = '';
+let _answerContext  = ''; // tab URL at last full init — used to detect context change
 
 async function _getGroqModel() {
   const d = await new Promise(r => chrome.storage.local.get(['myGroqModel'], r));
@@ -97,22 +98,31 @@ globalThis.openAnswerModal = async function () {
   const modal = document.getElementById('answerModal');
   if (!modal) return;
 
-  _cleanedJD    = '';
-  _jdPrepReady  = false;
-  _manualJD     = '';
-  _answerQCount = 0;
-  document.getElementById('answerQuestionsList').innerHTML  = '';
-  document.getElementById('answerJdInput').value            = '';
+  const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  const currentContext = activeTab?.url || '';
+
+  // Same context — just reopen modal with existing state, no reset
+  if (_answerContext && _answerContext === currentContext && _answerQCount > 0) {
+    modal.classList.add('open');
+    return;
+  }
+
+  // New context — full reset
+  _cleanedJD      = '';
+  _jdPrepReady    = false;
+  _manualJD       = '';
+  _answerQCount   = 0;
+  _answerContext  = currentContext;
+  document.getElementById('answerQuestionsList').innerHTML   = '';
+  document.getElementById('answerJdInput').value             = '';
   document.getElementById('answerJdInputWrap').style.display = 'none';
-  document.getElementById('answerJdBadge').textContent      = '';
-  document.getElementById('answerStatus').textContent       = '⏳ Checking JD cache…';
+  document.getElementById('answerJdBadge').textContent       = '';
+  document.getElementById('answerStatus').textContent        = '⏳ Checking JD cache…';
 
   modal.classList.add('open');
   _addQuestionRow();
 
-  // Try cache from current tab
-  const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  const m = (activeTab?.url || '').match(/currentJobId=(\d+)|\/jobs\/view\/(\d+)/);
+  const m = currentContext.match(/currentJobId=(\d+)|\/jobs\/view\/(\d+)/);
   const jobId = m ? (m[1] || m[2]) : null;
   const rawJD = (jobId && _jobJDCache?.[jobId]) || '';
 
