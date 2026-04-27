@@ -151,6 +151,7 @@ async function renderHistory(filter = '') {
             ? `<div class="history-company-actions">
                 <button class="copy-history-selected-btn" data-slug="${slug}" style="display:none">📋 Copy Selected Links</button>
                 <button class="copy-history-selected-emails-btn" data-slug="${slug}" style="display:none">✉ Copy Emails</button>
+                <button class="copy-history-selected-both-btn" data-slug="${slug}" style="display:none">⎘ Copy Links + Emails</button>
                 <button class="delete-history-selected-btn" data-slug="${slug}" style="display:none">🗑 Delete</button>
                 <button class="clear-history-selected-btn" data-slug="${slug}" style="display:none">✕ Clear</button>
                 <button class="copy-history-btn" data-slug="${slug}">📋 Copy All Links</button>
@@ -235,6 +236,7 @@ async function renderHistory(filter = '') {
       const hasSelection = companyChecked.length > 0;
       const copyBtn        = card.querySelector('.copy-history-selected-btn');
       const copyEmailsBtn  = card.querySelector('.copy-history-selected-emails-btn');
+      const copyBothBtn    = card.querySelector('.copy-history-selected-both-btn');
       const deleteBtn      = card.querySelector('.delete-history-selected-btn');
       const clearBtn       = card.querySelector('.clear-history-selected-btn');
       const copyAllBtn     = card.querySelector('.copy-history-btn');
@@ -242,6 +244,7 @@ async function renderHistory(filter = '') {
       const openAllBtn     = card.querySelector('.open-history-btn');
       if (copyBtn)         copyBtn.style.display        = hasSelection ? '' : 'none';
       if (copyEmailsBtn)   copyEmailsBtn.style.display  = hasSelection ? '' : 'none';
+      if (copyBothBtn)     copyBothBtn.style.display    = hasSelection ? '' : 'none';
       if (deleteBtn)       deleteBtn.style.display      = hasSelection ? '' : 'none';
       if (clearBtn)        clearBtn.style.display       = hasSelection ? '' : 'none';
       if (copyAllBtn)      copyAllBtn.style.display     = hasSelection ? 'none' : '';
@@ -414,6 +417,27 @@ async function renderHistory(filter = '') {
         .filter(Boolean);
       if (!emails.length) return;
       navigator.clipboard.writeText(emails.join('\n')).then(() => {
+        const orig = btn.textContent;
+        btn.textContent = '✅ Copied!';
+        setTimeout(() => { btn.textContent = orig; }, 1500);
+      });
+    });
+  });
+
+  document.querySelectorAll('.copy-history-selected-both-btn').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const slug = btn.dataset.slug;
+      const checked = [...historyList.querySelectorAll(`#hist-${slug} .h-check:checked`)];
+      const urls   = checked.map(cb => cb.dataset.url).filter(Boolean);
+      const emails = checked
+        .map(cb => cb.closest('.history-recruiter-row')?.querySelector('.h-copy-email')?.dataset.email || '')
+        .filter(Boolean);
+      const text = emails.length
+        ? `${urls.join('\n')}\n\n${emails.join('\n')}`
+        : urls.join('\n');
+      if (!text) return;
+      navigator.clipboard.writeText(text).then(() => {
         const orig = btn.textContent;
         btn.textContent = '✅ Copied!';
         setTimeout(() => { btn.textContent = orig; }, 1500);
