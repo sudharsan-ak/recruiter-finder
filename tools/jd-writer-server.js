@@ -255,7 +255,7 @@ const server = http.createServer((req, res) => {
         body = body.slice(firstLine.length).replace(/^\n+/, '');
       }
       const existing    = fs.existsSync(outputFile) ? fs.readFileSync(outputFile, 'utf8') : '';
-      const entryCount  = existing.length === 0 ? 0 : (existing.match(/^\d+\./gm) || []).length;
+      const entryCount  = existing.length === 0 ? 0 : (existing.match(/^\d+\. Company -/gm) || []).length;
       const entryNum    = entryCount + 1;
       const header      = `${entryNum}. Company - ${company}\nRole - ${role}`;
       const textToWrite = `${header}\n\n${body}`;
