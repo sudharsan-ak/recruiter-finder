@@ -255,14 +255,14 @@ const server = http.createServer((req, res) => {
         body = body.slice(firstLine.length).replace(/^\n+/, '');
       }
       const existing    = fs.existsSync(outputFile) ? fs.readFileSync(outputFile, 'utf8') : '';
-      const entryCount  = existing.length === 0 ? 0 : (existing.match(/^\d+\. Company -/gm) || []).length;
-      const entryNum    = entryCount + 1;
+      const headerNums  = existing.length === 0 ? [] : [...existing.matchAll(/^(\d+)\. Company -/gm)].map(m => parseInt(m[1], 10));
+      const entryNum    = headerNums.length === 0 ? 1 : Math.max(...headerNums) + 1;
       const header      = `${entryNum}. Company - ${company}\nRole - ${role}`;
-      const textToWrite = `${header}\n\n${body}`;
+      const textToWrite = `${header}\n\n${body}`.trim();
       const separator   = '\n\n\n';
-      const nextText    = existing.length === 0
+      const nextText    = existing.trim().length === 0
         ? textToWrite
-        : `${existing.replace(/\n*$/, '')}${separator}${textToWrite}`;
+        : `${existing.replace(/\s*$/, '')}${separator}${textToWrite}`;
 
       fs.writeFileSync(outputFile, nextText, 'utf8');
       console.log(`[${new Date().toISOString()}] Wrote JD to ${outputFile}`);
