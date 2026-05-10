@@ -1,3 +1,4 @@
+<img width="513" height="878" alt="Import-Export" src="https://github.com/user-attachments/assets/82c0a7a5-8990-469c-9364-0444b920ce26" />
 # LinkedIn Recruiter Finder
 
 A Chrome extension (Manifest V3) that automatically finds recruiters at any company while you browse LinkedIn job postings. Opens as a persistent side panel and works in the background even when the panel is closed.
@@ -30,9 +31,9 @@ A Chrome extension (Manifest V3) that automatically finds recruiters at any comp
 ### Recruiter Filtering
 Titles must match at least one include pattern and no exclude patterns:
 
-**Included:** recruit · talent · sourc(er/ing) · acquisition · recruiting/talent/HR/people coordinator
+**Included:** recruit Â· talent Â· sourc(er/ing) Â· acquisition Â· recruiting/talent/HR/people coordinator
 
-**Excluded:** engineer · software · developer · designer · executive · analyst · marketing · sales · product · finance · legal · data · devops · security · customer · payroll · writer · training
+**Excluded:** engineer Â· software Â· developer Â· designer Â· executive Â· analyst Â· marketing Â· sales Â· product Â· finance Â· legal Â· data Â· devops Â· security Â· customer Â· payroll Â· writer Â· training
 
 ### Results Display
 Recruiters are grouped into sections:
@@ -42,14 +43,14 @@ Recruiters are grouped into sections:
 - 🩷 **Talent Acquisition**
 - 🟢 **General Recruiters**
 
-Per-result controls: copy link · remove · checkbox for bulk selection
+Per-result controls: copy link Â· remove Â· checkbox for bulk selection
 
-Global controls: Expand All · Collapse All · Open All (background tabs) · Copy All · Copy Selected Links · Clear Selection
+Global controls: Expand All Â· Collapse All Â· Open All (background tabs) Â· Copy All Â· Copy Selected Links Â· Clear Selection
 
-Per-section controls: Copy · Open All
+Per-section controls: Copy Â· Open All
 
 ### Filter / Search
-Type to filter recruiters by name in real time. Section headers hide entirely when they have no matches. Clear with the ✕ button. Section collapse/expand works independently of the filter.
+Type to filter recruiters by name in real time. Section headers hide entirely when they have no matches. Clear with the âœ• button. Section collapse/expand works independently of the filter.
 
 ### History Tab
 Full searchable history of all scanned companies. Per-company:
