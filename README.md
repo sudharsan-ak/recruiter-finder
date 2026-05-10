@@ -1,3 +1,4 @@
+<img width="513" height="878" alt="Import-Export" src="https://github.com/user-attachments/assets/82c0a7a5-8990-469c-9364-0444b920ce26" />
 # LinkedIn Recruiter Finder
 
 A Chrome extension (Manifest V3) that automatically finds recruiters at any company while you browse LinkedIn job postings. Opens as a persistent side panel and works in the background even when the panel is closed.
@@ -66,7 +67,8 @@ Paste a list of company names (one per line or comma-separated) and scan them al
 - **Export CSV** â€” all cached recruiters as a spreadsheet
 - **Export Backup** / **Import Backup** â€” full JSON backup of your cache
 - **Refresh Logos** â€” backfills missing company logos for older cache entries
-<img width="578" height="887" alt="image" src="https://github.com/user-attachments/assets/8e74afb1-37a3-4508-8e36-80ea57f06d77" />
+<img width="513" height="878" alt="Import-Export" src="https://github.com/user-attachments/assets/07a7f4f1-a502-4422-9f98-667fa4d81d2d" />
+
 
 ### Job Description Copy
 From any LinkedIn job page, a **JD** button in the meta row lets you copy the job title + full job description to clipboard in one click. Works on both the jobs search view and direct `/jobs/view/` pages.
