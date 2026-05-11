@@ -1,5 +1,6 @@
 const JD_WRITE_ENDPOINT = 'http://127.0.0.1:4545/jd';
 const JD_WRITE_TIMEOUT_MS = 8000;
+const APPLY_LINK_CLICK_TIMEOUT_MS = 15000;
 
 async function writeJdToLocalHelper(payload) {
   const controller = new AbortController();
@@ -19,11 +20,442 @@ async function writeJdToLocalHelper(payload) {
   }
 }
 
+function normalizeJobSourceUrl(url) {
+  if (!url) return '';
+  const jobIdMatch = url.match(/\/jobs\/view\/(\d+)/) || url.match(/[?&]currentJobId=(\d+)/);
+  if (jobIdMatch) return `https://www.linkedin.com/jobs/view/${jobIdMatch[1]}/`;
+  try {
+    const u = new URL(url);
+    u.hash = '';
+    return u.href;
+  } catch {
+    return url;
+  }
+}
+
+function extractJobIdFromUrl(url) {
+  const m = (url || '').match(/\/jobs\/view\/(\d+)/) || (url || '').match(/[?&]currentJobId=(\d+)/);
+  return m ? m[1] : '';
+}
+
+function normalizeExternalUrl(url) {
+  if (!url) return '';
+  try {
+    const u = new URL(url);
+    u.hash = '';
+    return u.href;
+  } catch {
+    return url;
+  }
+}
+
+function extractLinkedInRedirectTarget(url) {
+  if (!url || !isLinkedInUrl(url)) return '';
+  try {
+    const u = new URL(url);
+    if (!/^\/safety\/go\/?$/i.test(u.pathname)) return '';
+    const target = u.searchParams.get('url') || '';
+    return target ? normalizeExternalUrl(target) : '';
+  } catch {
+    return '';
+  }
+}
+
+function isLinkedInUrl(url) {
+  try {
+    const host = new URL(url).hostname.replace(/^www\./, '');
+    return host === 'linkedin.com' || host.endsWith('.linkedin.com');
+  } catch {
+    return false;
+  }
+}
+
+async function resolveExternalApplyUrl(applyUrl) {
+  if (!applyUrl) return '';
+  const redirectTarget = extractLinkedInRedirectTarget(applyUrl);
+  if (redirectTarget) return redirectTarget;
+  return isLinkedInUrl(applyUrl) ? '' : normalizeExternalUrl(applyUrl);
+}
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function waitForTabComplete(tabId, timeoutMs = 10000) {
+  return new Promise(resolve => {
+    let done = false;
+    const finish = () => {
+      if (done) return;
+      done = true;
+      clearTimeout(timer);
+      chrome.tabs.onUpdated.removeListener(onUpdated);
+      resolve();
+    };
+    const onUpdated = (updatedTabId, changeInfo) => {
+      if (updatedTabId === tabId && changeInfo.status === 'complete') finish();
+    };
+    const timer = setTimeout(finish, timeoutMs);
+    chrome.tabs.onUpdated.addListener(onUpdated);
+    chrome.tabs.get(tabId, tab => {
+      if (!chrome.runtime.lastError && tab?.status === 'complete') finish();
+    });
+  });
+}
+
+async function extractApplyUrlFromTab(tabId) {
+  try {
+    const res = await chrome.scripting.executeScript({
+      target: { tabId },
+      func: () => {
+        function absoluteUrl(href) {
+          if (!href) return '';
+          try { return new URL(href, location.href).href; } catch { return ''; }
+        }
+
+        function normalizeExternalUrl(url) {
+          if (!url) return '';
+          try {
+            const u = new URL(url);
+            u.hash = '';
+            return u.href;
+          } catch {
+            return url;
+          }
+        }
+
+        function isLinkedInUrl(url) {
+          try {
+            const host = new URL(url).hostname.replace(/^www\./, '');
+            return host === 'linkedin.com' || host.endsWith('.linkedin.com');
+          } catch {
+            return false;
+          }
+        }
+
+        function extractLinkedInRedirectTarget(url) {
+          if (!url || !isLinkedInUrl(url)) return '';
+          try {
+            const u = new URL(url);
+            if (!/^\/safety\/go\/?$/i.test(u.pathname)) return '';
+            const target = u.searchParams.get('url') || '';
+            return target ? normalizeExternalUrl(target) : '';
+          } catch {
+            return '';
+          }
+        }
+
+        function isVisible(el) {
+          const box = el?.getBoundingClientRect?.();
+          return !!box && box.width > 0 && box.height > 0;
+        }
+
+        function applyLabel(el) {
+          return [
+            el.innerText,
+            el.textContent,
+            el.getAttribute('aria-label'),
+            el.getAttribute('title'),
+            el.closest('[aria-label]')?.getAttribute('aria-label'),
+          ].filter(Boolean).join(' ');
+        }
+
+        function looksLikeExternalApply(el) {
+          const label = applyLabel(el);
+          if (!/\bapply\b/i.test(label)) return false;
+          if (/\b(easy|quick)\s+apply\b/i.test(label)) return false;
+          if (/company\s+website|external/i.test(label)) return true;
+          return !!el.querySelector?.(
+            'svg[data-test-icon*="link-external"], use[href*="link-external"]'
+          );
+        }
+
+        for (const a of document.querySelectorAll('a[href]')) {
+          const href = absoluteUrl(a.getAttribute('href'));
+          if (!href || !isVisible(a) || !looksLikeExternalApply(a)) continue;
+          const redirectTarget = extractLinkedInRedirectTarget(href);
+          if (redirectTarget) return redirectTarget;
+          try {
+            const host = new URL(href).hostname.replace(/^www\./, '');
+            if (host && !host.endsWith('linkedin.com')) return normalizeExternalUrl(href);
+          } catch {}
+        }
+
+        return '';
+      },
+    });
+    return res[0]?.result || '';
+  } catch {
+    return '';
+  }
+}
+
+async function clickExternalApplyInTab(tabId) {
+  return new Promise(resolve => {
+    let done = false;
+    const childTabIds = new Set();
+
+    const finish = (url = '') => {
+      if (done) return;
+      done = true;
+      clearTimeout(timer);
+      chrome.tabs.onCreated.removeListener(onCreated);
+      chrome.tabs.onUpdated.removeListener(onUpdated);
+      childTabIds.forEach(id => chrome.tabs.remove(id).catch(() => {}));
+
+      const redirectTarget = extractLinkedInRedirectTarget(url);
+      if (redirectTarget) {
+        resolve(redirectTarget);
+        return;
+      }
+      resolve(url && !isLinkedInUrl(url) ? normalizeExternalUrl(url) : '');
+    };
+
+    const inspectUrl = url => {
+      if (!url) return;
+      const redirectTarget = extractLinkedInRedirectTarget(url);
+      if (redirectTarget) finish(redirectTarget);
+      else if (!isLinkedInUrl(url)) finish(url);
+    };
+
+    const onCreated = tab => {
+      if (tab.openerTabId !== tabId) return;
+      childTabIds.add(tab.id);
+      inspectUrl(tab.pendingUrl || tab.url || '');
+    };
+
+    const onUpdated = (updatedTabId, changeInfo, tab) => {
+      if (updatedTabId !== tabId && !childTabIds.has(updatedTabId)) return;
+      inspectUrl(changeInfo.url || tab?.pendingUrl || tab?.url || '');
+    };
+
+    const timer = setTimeout(() => {
+      chrome.tabs.get(tabId, tab => {
+        if (chrome.runtime.lastError) {
+          finish('');
+          return;
+        }
+        finish(tab?.url || '');
+      });
+    }, APPLY_LINK_CLICK_TIMEOUT_MS);
+
+    chrome.tabs.onCreated.addListener(onCreated);
+    chrome.tabs.onUpdated.addListener(onUpdated);
+
+    chrome.scripting.executeScript({
+      target: { tabId },
+      func: () => {
+        function isVisible(el) {
+          const box = el?.getBoundingClientRect?.();
+          return !!box && box.width > 0 && box.height > 0;
+        }
+
+        function applyLabel(el) {
+          return [
+            el.innerText,
+            el.textContent,
+            el.getAttribute('aria-label'),
+            el.getAttribute('title'),
+            el.closest('[aria-label]')?.getAttribute('aria-label'),
+          ].filter(Boolean).join(' ');
+        }
+
+        function looksLikeExternalApply(el) {
+          const label = applyLabel(el);
+          if (!/\bapply\b/i.test(label)) return false;
+          if (/\b(easy|quick)\s+apply\b/i.test(label)) return false;
+          if (/company\s+website|external/i.test(label)) return true;
+          return !!el.querySelector?.(
+            'svg[data-test-icon*="link-external"], use[href*="link-external"]'
+          );
+        }
+
+        const candidates = [
+          ...document.querySelectorAll(
+            '#jobs-apply-button-id, [data-live-test-job-apply-button], .jobs-apply-button, button[role="link"], a[href]'
+          ),
+        ].filter(el => isVisible(el) && looksLikeExternalApply(el));
+
+        const button = candidates[0];
+        if (!button) return false;
+        button.click();
+        return true;
+      },
+    }, results => {
+      if (chrome.runtime.lastError || results?.[0]?.result !== true) finish('');
+    });
+  });
+}
+
+async function findExistingLinkedInJobTab(sourceUrl) {
+  const jobId = extractJobIdFromUrl(sourceUrl);
+  if (!jobId) return null;
+
+  try {
+    const tabs = await chrome.tabs.query({ url: 'https://www.linkedin.com/jobs/view/*' });
+    return tabs.find(tab => extractJobIdFromUrl(tab.url || tab.pendingUrl || '') === jobId) || null;
+  } catch {
+    return null;
+  }
+}
+
+async function resolveApplyUrlFromLinkedInJob(sourceUrl) {
+  if (!sourceUrl || !isLinkedInUrl(sourceUrl)) return '';
+
+  const existingTab = await findExistingLinkedInJobTab(sourceUrl);
+  if (existingTab?.id) {
+    await waitForTabComplete(existingTab.id);
+    for (let i = 0; i < 5; i++) {
+      const url = await extractApplyUrlFromTab(existingTab.id);
+      if (url) return await resolveExternalApplyUrl(url);
+      await sleep(1000);
+    }
+  }
+
+  let tab = null;
+  try {
+    tab = await new Promise(resolve => {
+      chrome.tabs.create({ url: sourceUrl, active: false }, created => {
+        resolve(chrome.runtime.lastError ? null : created);
+      });
+    });
+    if (!tab?.id) return '';
+
+    await waitForTabComplete(tab.id);
+
+    for (let i = 0; i < 5; i++) {
+      const url = await extractApplyUrlFromTab(tab.id);
+      if (url) return await resolveExternalApplyUrl(url);
+      await sleep(1000);
+    }
+
+    return await clickExternalApplyInTab(tab.id);
+  } catch {
+    return '';
+  } finally {
+    if (tab?.id) chrome.tabs.remove(tab.id).catch(() => {});
+  }
+}
+
+function buildJdText(company, role, jd, sourceUrl, applyUrl = '') {
+  const lines = [
+    `Company - ${company}`,
+    `Role - ${role || 'Unknown Role'}`,
+  ];
+  if (sourceUrl) lines.push(`Job Link - ${sourceUrl}`);
+  if (applyUrl && applyUrl !== sourceUrl) lines.push(`Apply Link - ${applyUrl}`);
+  lines.push('JD:', '', jd);
+  return lines.join('\n');
+}
+
 async function getJobDetailsFromPage(tabId, tabUrl) {
   try {
     const res = await chrome.scripting.executeScript({
       target: { tabId },
       func: (isLinkedIn) => {
+        function absoluteUrl(href) {
+          if (!href) return '';
+          try { return new URL(href, location.href).href; } catch { return ''; }
+        }
+
+        function cleanPageUrl(url) {
+          if (!url) return '';
+          const jobIdMatch = url.match(/\/jobs\/view\/(\d+)/) || url.match(/[?&]currentJobId=(\d+)/);
+          if (jobIdMatch) return `https://www.linkedin.com/jobs/view/${jobIdMatch[1]}/`;
+          try {
+            const u = new URL(url);
+            u.hash = '';
+            return u.href;
+          } catch {
+            return url;
+          }
+        }
+
+        function normalizeExternalUrl(url) {
+          if (!url) return '';
+          try {
+            const u = new URL(url);
+            u.hash = '';
+            return u.href;
+          } catch {
+            return url;
+          }
+        }
+
+        function isLinkedInUrl(url) {
+          try {
+            const host = new URL(url).hostname.replace(/^www\./, '');
+            return host === 'linkedin.com' || host.endsWith('.linkedin.com');
+          } catch {
+            return false;
+          }
+        }
+
+        function extractLinkedInRedirectTarget(url) {
+          if (!url || !isLinkedInUrl(url)) return '';
+          try {
+            const u = new URL(url);
+            if (!/^\/safety\/go\/?$/i.test(u.pathname)) return '';
+            const target = u.searchParams.get('url') || '';
+            return target ? normalizeExternalUrl(target) : '';
+          } catch {
+            return '';
+          }
+        }
+
+        function isVisible(el) {
+          const box = el?.getBoundingClientRect?.();
+          return !!box && box.width > 0 && box.height > 0;
+        }
+
+        function findLinkedInJobUrl() {
+          const fromLocation = cleanPageUrl(location.href);
+          if (/linkedin\.com\/jobs\/view\/\d+/.test(fromLocation)) return fromLocation;
+
+          const canonical = document.querySelector('link[rel="canonical"][href*="/jobs/view/"]')?.href;
+          const fromCanonical = cleanPageUrl(canonical);
+          if (/linkedin\.com\/jobs\/view\/\d+/.test(fromCanonical)) return fromCanonical;
+
+          for (const a of document.querySelectorAll('a[href*="/jobs/view/"]')) {
+            const fromAnchor = cleanPageUrl(a.href);
+            if (/linkedin\.com\/jobs\/view\/\d+/.test(fromAnchor)) return fromAnchor;
+          }
+
+          return fromLocation;
+        }
+
+        function findApplyUrl() {
+          if (!isLinkedIn) return '';
+          const anchors = [...document.querySelectorAll('a[href]')];
+
+          for (const a of anchors) {
+            const href = absoluteUrl(a.getAttribute('href'));
+            if (!href || !isVisible(a)) continue;
+            const redirectTarget = extractLinkedInRedirectTarget(href);
+            if (redirectTarget) return redirectTarget;
+          }
+
+          for (const a of anchors) {
+            const href = absoluteUrl(a.getAttribute('href'));
+            if (!href || !isVisible(a)) continue;
+            const redirectTarget = extractLinkedInRedirectTarget(href);
+            const label = [
+              a.innerText,
+              a.textContent,
+              a.getAttribute('aria-label'),
+              a.getAttribute('title'),
+              a.closest('[aria-label]')?.getAttribute('aria-label'),
+            ].filter(Boolean).join(' ');
+            if (!/\bapply\b/i.test(label)) continue;
+            if (redirectTarget) return redirectTarget;
+            try {
+              const host = new URL(href).hostname.replace(/^www\./, '');
+              if (host && !host.endsWith('linkedin.com')) return href;
+            } catch {}
+          }
+
+          return '';
+        }
+
         let role = '';
         if (isLinkedIn) {
           for (const sel of [
@@ -144,13 +576,15 @@ async function getJobDetailsFromPage(tabId, tabUrl) {
         }
 
         jd = jd.replace(/\r\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
-        return { role, jd };
+        const sourceUrl = isLinkedIn ? findLinkedInJobUrl() : cleanPageUrl(location.href);
+        const applyUrl = findApplyUrl();
+        return { role, jd, sourceUrl, applyUrl };
       },
       args: [!!tabUrl?.includes('linkedin.com')]
     });
-    return res[0]?.result || { role: '', jd: '' };
+    return res[0]?.result || { role: '', jd: '', sourceUrl: '', applyUrl: '' };
   } catch {
-    return { role: '', jd: '' };
+    return { role: '', jd: '', sourceUrl: '', applyUrl: '' };
   }
 }
 
@@ -165,22 +599,26 @@ async function handleCopyJd() {
     return;
   }
 
-  const { role, jd } = await getJobDetailsFromPage(tab.id, tab.url);
+  const { role, jd, sourceUrl: pageSourceUrl, applyUrl } = await getJobDetailsFromPage(tab.id, tab.url);
   const company = companyEl.textContent.trim() || 'Unknown Company';
+  const sourceUrl = pageSourceUrl || normalizeJobSourceUrl(tab.url || '');
+  let resolvedApplyUrl = applyUrl || '';
+  if (resolvedApplyUrl) {
+    btn.textContent = 'Link...';
+    resolvedApplyUrl = await resolveExternalApplyUrl(resolvedApplyUrl);
+  } else if (isLinkedInUrl(sourceUrl)) {
+    btn.textContent = 'Link...';
+    resolvedApplyUrl = await resolveApplyUrlFromLinkedInJob(sourceUrl);
+  }
 
-  const text = [
-    `Company - ${company}`,
-    `Role - ${role || 'Unknown Role'}`,
-    'JD:',
-    '',
-    jd,
-  ].join('\n');
+  const text = buildJdText(company, role, jd, sourceUrl, resolvedApplyUrl);
 
   const payload = {
     company,
     role: role || 'Unknown Role',
     text: jd,
-    sourceUrl: tab.url || '',
+    sourceUrl,
+    applyUrl: resolvedApplyUrl || '',
     capturedAt: new Date().toISOString(),
   };
 
@@ -223,6 +661,7 @@ async function handlePasteJd() {
   document.getElementById('pasteJdText').value = '';
   document.getElementById('pasteJdStatus').textContent = '';
   document.getElementById('pasteJdSaveBtn').textContent = 'Save';
+  modal.dataset.sourceUrl = normalizeJobSourceUrl(tab?.url || '');
   modal.classList.add('open');
   setTimeout(() => document.getElementById('pasteJdText').focus(), 50);
 }
@@ -233,6 +672,7 @@ async function _savePasteJd() {
   const text    = document.getElementById('pasteJdText').value.trim();
   const statusEl = document.getElementById('pasteJdStatus');
   const saveBtn  = document.getElementById('pasteJdSaveBtn');
+  const modal = document.getElementById('pasteJdModal');
 
   if (!text) {
     statusEl.style.color = '#c0392b';
@@ -247,7 +687,8 @@ async function _savePasteJd() {
     company,
     role,
     text,
-    sourceUrl: '',
+    sourceUrl: modal?.dataset?.sourceUrl || '',
+    applyUrl: '',
     capturedAt: new Date().toISOString(),
   });
 
@@ -391,4 +832,3 @@ async function getVisaSponsorshipFromJobPage(tabId) {
     return 'na';
   }
 }
-

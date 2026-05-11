@@ -69,7 +69,7 @@ Paste a list of company names (one per line or comma-separated) and scan them al
 <img width="513" height="878" alt="Import-Export" src="https://github.com/user-attachments/assets/82c0a7a5-8990-469c-9364-0444b920ce26" />
 
 ### Job Description Copy
-From any LinkedIn job page, a **JD** button in the meta row lets you copy the job title + full job description to clipboard in one click. Works on both the jobs search view and direct `/jobs/view/` pages.
+From any LinkedIn job page, a **JD** button in the meta row lets you copy the job title, job link, and full job description to clipboard in one click. Works on both the jobs search view and direct `/jobs/view/` pages. For external-apply postings, it reads exposed LinkedIn apply links such as `/safety/go/?url=...`, decodes the final job board URL, and saves it as `Apply Link`. If a jobs search page renders Apply as a JavaScript button with no `href`, the extension opens the direct job view in a background tab, inspects exposed links there, and if needed clicks the external Apply button in that temporary tab to capture the final URL before closing it.
 
 ### Company Meta
 Displays below the scan button for the current job:
@@ -181,7 +181,7 @@ If you want the **JD** button to do more than copy to clipboard, you can run a s
 
 How it works:
 - clicking **JD** still copies the job description to your clipboard
-- if the local helper is running, the extension also POSTs the same JD payload to your machine
+- if the local helper is running, the extension also POSTs the same JD payload to your machine, including the canonical job link and any resolved external apply link
 - the bundled helper script is `tools/jd-writer-server.js`
 
 Example:
@@ -190,6 +190,6 @@ node tools/jd-writer-server.js "/path/to/JD Text.txt" 4545
 ```
 
 Behavior:
-- if the target file is empty, it writes the JD directly
+- if the target file is empty, it writes the JD directly with `Company`, `Role`, and `Job Link` header lines, plus `Apply Link` when available
 - if the target file already has content, it appends a newline and then the new JD text
 - if the helper is not running, normal clipboard copy still works

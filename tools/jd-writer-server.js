@@ -248,6 +248,8 @@ const server = http.createServer((req, res) => {
 
       const company = typeof payload.company === 'string' ? payload.company : '';
       const role    = typeof payload.role    === 'string' ? payload.role    : '';
+      const sourceUrl = typeof payload.sourceUrl === 'string' ? payload.sourceUrl.trim() : '';
+      const applyUrl  = typeof payload.applyUrl  === 'string' ? payload.applyUrl.trim()  : '';
       let body      = (cleaned || rawText).replace(/^\n+/, '');
       // Strip duplicate title if Groq repeats it as the first line
       const firstLine = body.split('\n')[0].trim();
@@ -257,7 +259,14 @@ const server = http.createServer((req, res) => {
       const existing    = fs.existsSync(outputFile) ? fs.readFileSync(outputFile, 'utf8') : '';
       const headerNums  = existing.length === 0 ? [] : [...existing.matchAll(/^(\d+)\. Company -/gm)].map(m => parseInt(m[1], 10));
       const entryNum    = headerNums.length === 0 ? 1 : Math.max(...headerNums) + 1;
-      const header      = `${entryNum}. Company - ${company}\nRole - ${role}`;
+      const linkLines   = [];
+      if (sourceUrl) linkLines.push(`Job Link - ${sourceUrl}`);
+      if (applyUrl && applyUrl !== sourceUrl) linkLines.push(`Apply Link - ${applyUrl}`);
+      const header      = [
+        `${entryNum}. Company - ${company}`,
+        `Role - ${role}`,
+        ...linkLines,
+      ].join('\n');
       const textToWrite = `${header}\n\n${body}`.trim();
       const separator   = '\n\n\n';
       const nextText    = existing.trim().length === 0
