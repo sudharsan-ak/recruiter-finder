@@ -10,7 +10,7 @@ export async function runScraper(companySlug, deps) {
     SEARCH_QUERY,
   } = deps;
 
-  const peopleBaseUrl = `https://www.linkedin.com/company/${companySlug}/people/`;
+  const peopleBaseUrl = `https://www.linkedin.com/company/${companySlug}/people/?facetGeoRegion=103644278`;
 
   const tab = await createTab(peopleBaseUrl);
   const tabId = tab.id;
@@ -76,7 +76,7 @@ export async function runScraper(companySlug, deps) {
 
     chrome.storage.session.set({ status: 'Searching for recruiters...', progress: 1, total: 1 });
 
-    const searchUrl = `${peopleBaseUrl}?keywords=${encodeURIComponent(SEARCH_QUERY)}`;
+    const searchUrl = `${peopleBaseUrl}&keywords=${encodeURIComponent(SEARCH_QUERY)}`;
     await navigateTab(tabId, searchUrl);
     await waitForTabLoad(tabId);
     await sleep(1800);
@@ -89,7 +89,7 @@ export async function runScraper(companySlug, deps) {
       const seen = new Set(filtered.map(r => r.url));
       const extraResults = [...filtered];
       for (const kw of ['recruiter', 'talent', 'hiring']) {
-        const kwUrl = `${peopleBaseUrl}?keywords=${encodeURIComponent(kw)}`;
+        const kwUrl = `${peopleBaseUrl}&keywords=${encodeURIComponent(kw)}`;
         await navigateTab(tabId, kwUrl);
         await waitForTabLoad(tabId);
         await sleep(1800);
