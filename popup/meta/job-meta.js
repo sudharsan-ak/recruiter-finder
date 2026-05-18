@@ -602,7 +602,8 @@ async function handleCopyJd() {
   }
 
   let { role, jd, sourceUrl: pageSourceUrl } = await getJobDetailsFromPage(tab.id, tab.url);
-  const company = companyEl.textContent.trim() || 'Unknown Company';
+  const companyRaw = companyEl.textContent.trim() || 'Unknown Company';
+  const company = companyRaw.charAt(0).toUpperCase() + companyRaw.slice(1);
   const sourceUrl = pageSourceUrl || normalizeJobSourceUrl(tab.url || '');
 
   // On LinkedIn collections/recommended pages the active tab DOM doesn't expose the job detail
@@ -699,7 +700,8 @@ async function handlePasteJd() {
 }
 
 async function _savePasteJd() {
-  const company = document.getElementById('pasteJdCompany').value.trim() || 'Unknown Company';
+  const companyRaw = document.getElementById('pasteJdCompany').value.trim() || 'Unknown Company';
+  const company = companyRaw.charAt(0).toUpperCase() + companyRaw.slice(1);
   const role    = document.getElementById('pasteJdRole').value.trim()    || 'Unknown Role';
   const text    = document.getElementById('pasteJdText').value.trim();
   const statusEl = document.getElementById('pasteJdStatus');
