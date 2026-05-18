@@ -492,7 +492,9 @@ async function getJobDetailsFromPage(tabId, tabUrl) {
           } else {
             const pane = document.querySelector(
               '.jobs-search__job-details--wrapper, .scaffold-layout__detail, ' +
-              '.job-view-layout, .jobs-details'
+              '.job-view-layout, .jobs-details, ' +
+              '.jobs-search__job-details--container, .jobs-details__main-content, ' +
+              '[data-job-id], .jobs-search-results-detail'
             );
             const raw = pane?.innerText || document.body.innerText || '';
             const startIdx = raw.search(/About the job\s*\n/i);
@@ -599,17 +601,47 @@ async function handleCopyJd() {
     return;
   }
 
-  const { role, jd, sourceUrl: pageSourceUrl, applyUrl } = await getJobDetailsFromPage(tab.id, tab.url);
+  let { role, jd, sourceUrl: pageSourceUrl } = await getJobDetailsFromPage(tab.id, tab.url);
   const company = companyEl.textContent.trim() || 'Unknown Company';
   const sourceUrl = pageSourceUrl || normalizeJobSourceUrl(tab.url || '');
-  let resolvedApplyUrl = applyUrl || '';
-  if (resolvedApplyUrl) {
-    btn.textContent = 'Link...';
-    resolvedApplyUrl = await resolveExternalApplyUrl(resolvedApplyUrl);
-  } else if (isLinkedInUrl(sourceUrl)) {
-    btn.textContent = 'Link...';
-    resolvedApplyUrl = await resolveApplyUrlFromLinkedInJob(sourceUrl);
+
+  // On LinkedIn collections/recommended pages the active tab DOM doesn't expose the job detail
+  // panel to scripting — scrape the canonical /jobs/view/ URL in a background tab instead.
+  if ((!jd || jd.length < 50) && /linkedin\.com\/jobs\/view\/\d+/.test(sourceUrl)) {
+    btn.textContent = 'Loading...';
+    let bgTab = null;
+    try {
+      bgTab = await new Promise(resolve => {
+        chrome.tabs.create({ url: sourceUrl, active: false }, created => {
+          resolve(chrome.runtime.lastError ? null : created);
+        });
+      });
+      if (bgTab?.id) {
+        await waitForTabComplete(bgTab.id);
+        await sleep(1500);
+        const details = await getJobDetailsFromPage(bgTab.id, sourceUrl);
+        if (details.jd && details.jd.length > 50) {
+          role = details.role || role;
+          jd = details.jd;
+        }
+      }
+    } catch {}
+    finally {
+      if (bgTab?.id) chrome.tabs.remove(bgTab.id).catch(() => {});
+    }
   }
+
+  // Apply link resolution disabled — opens background tabs to click Apply button, too invasive.
+  // Uncomment to re-enable if needed.
+  // let resolvedApplyUrl = applyUrl || '';
+  // if (resolvedApplyUrl) {
+  //   btn.textContent = 'Link...';
+  //   resolvedApplyUrl = await resolveExternalApplyUrl(resolvedApplyUrl);
+  // } else if (isLinkedInUrl(sourceUrl)) {
+  //   btn.textContent = 'Link...';
+  //   resolvedApplyUrl = await resolveApplyUrlFromLinkedInJob(sourceUrl);
+  // }
+  const resolvedApplyUrl = '';
 
   const text = buildJdText(company, role, jd, sourceUrl, resolvedApplyUrl);
 
