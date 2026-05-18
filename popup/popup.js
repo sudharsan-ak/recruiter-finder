@@ -127,7 +127,6 @@ tabJobsBtn.addEventListener('click', () => {
 
 tabHistoryBtn.addEventListener('click', () => activateTab(tabHistoryBtn, historyPanel, () => {
   renderHistory();
-  globalThis.backfillLogos?.();
 }));
 
 // ☰ Tab menu (Bulk Scan, future extras)
@@ -141,7 +140,7 @@ function exitSubView() {
   tabMenuBtn.textContent = '☰';
   tabMenuBtn.classList.remove('active');
   if (_prevTabBtn === tabHistoryBtn) {
-    activateTab(tabHistoryBtn, historyPanel, () => { renderHistory(); globalThis.backfillLogos?.(); });
+    activateTab(tabHistoryBtn, historyPanel, () => { renderHistory(); });
   } else {
     activateTab(_prevTabBtn, _prevPanel);
   }
