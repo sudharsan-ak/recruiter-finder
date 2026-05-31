@@ -3,193 +3,56 @@
 A Chrome extension (Manifest V3) that automatically finds recruiters at any company while you browse LinkedIn job postings. Opens as a persistent side panel and works in the background even when the panel is closed.
 
 ---
+
 <img width="565" height="883" alt="image" src="https://github.com/user-attachments/assets/156a54f0-0ab2-45bf-9964-289a96ccd806" />
+
+---
 
 ## Features
 
-### Core Scan
-- Click **Find Recruiters** from any LinkedIn job page - the extension reads the company, navigates to their People tab in a background tab, scrolls through results, and returns a filtered list of recruiters
-- Hard cap of ~20 recruiters per scan (stops at 80 people collected) to keep scans fast
-- Results are cached locally so revisiting the same company is instant
+| Feature | Description |
+|---|---|
+| **Find Recruiters** | Scans a company's LinkedIn People tab in the background and returns a filtered recruiter list |
+| **Scan Queue** | Queue multiple companies while a scan is running |
+| **Observer Mode** | Watches the People tab as you browse and surfaces recruiters not found in the automated scan |
+| **History Tab** | Searchable history of all scanned companies with bulk copy/export per company |
+| **Bulk Scan** | Paste a list of company names and scan them all in sequence |
+| **Import / Export** | Export recruiters as CSV or XLSX; full JSON backup and restore |
+| **📋 JD** | One-click copy of job title, link, and description from any LinkedIn job page |
+| **✎ Paste JD** | Manually paste a job description to save it to your local JD file |
+| **📷 Paste JD IMG** | Paste job description screenshots — saved as image files with markdown links |
+| **Answer** | AI-generated answers to job application questions using your profile + the JD |
+| **Company Meta** | Shows employee count, visa status, experience required, and tech stack for the current job |
 
-### Auto-Scan
-- Toggle **Auto-scan as I browse** - the extension quietly scans each new company you view on LinkedIn without any manual action
-- Only scans companies not already in cache
-
-### Scan Queue
-- While a scan is running, you can queue additional companies with **Add to Queue**
-- The queue persists across panel close/reopen - if you close the panel mid-scan it picks up where it left off when you reopen it
-
-### Observer Mode (Option B)
-- When you manually browse a company's **People tab** on LinkedIn, a `MutationObserver` watches for recruiter cards as they appear in the DOM
-- A green notification banner appears: *"X new recruiters spotted at [company]"*
-- Click **👁 Show** to open a picker modal - select which ones to add, leave others pending
-- Dismissing (✕) allows the notification to reappear the next time you search or scroll - it removes those URLs from the seen set so they can be re-detected
-- Filters out anyone already saved in your cache for that company
-
-### Recruiter Filtering
-Titles must match at least one include pattern and no exclude patterns:
-
-**Included:** recruit Â· talent Â· sourc(er/ing) Â· acquisition Â· recruiting/talent/HR/people coordinator
-
-**Excluded:** engineer Â· software Â· developer Â· designer Â· executive Â· analyst Â· marketing Â· sales Â· product Â· finance Â· legal Â· data Â· devops Â· security Â· customer Â· payroll Â· writer Â· training
-
-### Results Display
-Recruiters are grouped into sections:
-- 🔵 **Technical Recruiters** - technical / tech / sourcing in title
-- 🟣 **Senior / Head of Recruiting** - senior / head / director / VP / lead
-- 🟡 **Coordinators**
-- 🩷 **Talent Acquisition**
-- 🟢 **General Recruiters**
-
-Per-result controls: copy link Â· remove Â· checkbox for bulk selection
-
-Global controls: Expand All Â· Collapse All Â· Open All (background tabs) Â· Copy All Â· Copy Selected Links Â· Clear Selection
-
-Per-section controls: Copy Â· Open All
-
-### Filter / Search
-Type to filter recruiters by name in real time. Section headers hide entirely when they have no matches. Clear with the âœ• button. Section collapse/expand works independently of the filter.
-
-### History Tab
-Full searchable history of all scanned companies. Per-company:
-- Expand to see all saved recruiters
-- Open All / Copy All links
-- Per-recruiter checkboxes with **Copy Links** and **Open Tabs** selection bar
-- Rename company display name inline
-- Delete individual recruiters or entire company entry
-
-### Bulk Scan
-Paste a list of company names (one per line or comma-separated) and scan them all in sequence. Optional force re-scan to bypass cache.
-
-### Import / Export
-- **Export CSV** - all cached recruiters as a spreadsheet
-- **Export Backup** / **Import Backup** - full JSON backup of your cache
-- **Refresh Logos** - backfills missing company logos for older cache entries
-<img width="513" height="878" alt="Import-Export" src="https://github.com/user-attachments/assets/82c0a7a5-8990-469c-9364-0444b920ce26" />
-
-### Job Description Copy
-From any LinkedIn job page, a **JD** button in the meta row lets you copy the job title, job link, and full job description to clipboard in one click. Works on both the jobs search view and direct `/jobs/view/` pages. For external-apply postings, it reads exposed LinkedIn apply links such as `/safety/go/?url=...`, decodes the final job board URL, and saves it as `Apply Link`. If a jobs search page renders Apply as a JavaScript button with no `href`, the extension opens the direct job view in a background tab, inspects exposed links there, and if needed clicks the external Apply button in that temporary tab to capture the final URL before closing it.
-
-### Company Meta
-Displays below the scan button for the current job:
-- Employee count
-- Visa sponsorship status (scraped from the JD)
-- Years of experience required
-- Tech stack detected from the JD
+→ [Full feature details](docs/features.md)
 
 ---
 
 ## Installation
 
 1. Clone or download this repository
-2. Open Chrome and go to `chrome://extensions`
-3. Enable **Developer mode** (top right toggle)
+2. Open Chrome → `chrome://extensions`
+3. Enable **Developer mode** (top right)
 4. Click **Load unpacked** and select the extension folder
-5. The extension icon appears in your toolbar - click it or press `Alt+R` (`Cmd+Shift+R` on Mac) to open the side panel
+5. Press `Alt+R` (`Cmd+Shift+R` on Mac) to open the side panel
 
-> **Note:** This extension requires LinkedIn to be open in a tab. It navigates to company People tabs in background tabs to scrape recruiter data.
+→ [Setup, file structure & permissions](docs/setup.md)
 
 ---
 
 ## Usage
 
 1. Open any LinkedIn job posting
-2. Press `Alt+R` or click the extension icon to open the side panel
-3. Click **🚀 Find Recruiters** - the extension scans the company automatically
-4. Results appear grouped by recruiter type
-5. Use checkboxes + **Copy Selected Links** to copy profiles you want to reach out to
-
-**For deeper searches:** Navigate to a company's People tab on LinkedIn and scroll/search - the observer will surface additional recruiters not found in the automated scan.
+2. Press `Alt+R` to open the side panel
+3. Click **🚀 Find Recruiters**
+4. Use checkboxes + **Copy Selected Links** to grab the profiles you want
 
 ---
 
-## File Structure
-
-```
-+-- manifest.json            # MV3 manifest � permissions, content scripts, side panel
-+-- background.js            # Service worker � scraper, auto-scan queue
-+-- aliases.js               # Manual company slug alias map
-+-- content/
-�   +-- content-core.js      # LinkedIn job/company/people content logic
-�   +-- profile-content.js   # LinkedIn profile recruiter detection
-+-- popup/
-�   +-- popup.html           # Side panel UI � HTML + CSS
-�   +-- popup.js             # Side panel shell/state wiring
-�   +-- init.js
-�   +-- cache/
-�   +-- history/
-�   +-- notifications/
-�   +-- meta/
-�   +-- bulk/
-�   +-- scanner/
-�   +-- storage/
-+-- oldFiles/                # Legacy inactive reference files
-+-- icons/                   # Extension icons (16, 32, 48, 128px)
-```
-
----
-
-## How the Scraper Works
-
-1. Opens the company's LinkedIn People tab in a background tab
-2. Searches with keywords: `technical, tech, recruiter, talent, hiring, coordinator`
-3. Auto-scrolls and clicks "Show more results" until results stabilize or 15s timeout
-4. Stops collecting after ~80 people (yields ~20 recruiters after filtering)
-5. Filters by job title using include/exclude regex patterns
-6. Saves results to `chrome.storage.local` - survives browser restarts
-
----
-
-## Permissions Used
-
-| Permission | Why |
-|---|---|
-| `tabs` | Query the active tab URL to detect LinkedIn job pages |
-| `scripting` | Execute scraping scripts in background tabs |
-| `storage` | Cache recruiter data and extension settings locally |
-| `sidePanel` | Render the UI as a persistent Chrome side panel |
-| `activeTab` | Read the current tab's URL and DOM |
-| `<all_urls>` | Required for the "any site" job description copy feature |
-
----
-
-## Privacy
-
-- All data is stored **locally** in your browser (`chrome.storage.local`)
-- Nothing is sent to any external server
-- The extension only accesses LinkedIn pages and only when you trigger a scan
-
----
-
-## Known Limitations
-
-- LinkedIn may change their DOM structure at any time, which can break selectors
-- The People tab scraper is limited to ~20 recruiters per automated scan; use the Observer (manual browse) to find more
-- Auto-scan and background scraping open temporary LinkedIn tabs - these are closed automatically after scraping
+<img width="513" height="878" alt="Import-Export" src="https://github.com/user-attachments/assets/82c0a7a5-8990-469c-9364-0444b920ce26" />
 
 ---
 
 ## License
 
 MIT
-
-
-## Local JD Writer Helper
-
-If you want the **JD** button to do more than copy to clipboard, you can run a small local helper that listens on `http://127.0.0.1:4545/jd` and writes each copied job description to a text file.
-
-How it works:
-- clicking **JD** still copies the job description to your clipboard
-- if the local helper is running, the extension also POSTs the same JD payload to your machine, including the canonical job link and any resolved external apply link
-- the bundled helper script is `tools/jd-writer-server.js`
-
-Example:
-```bash
-node tools/jd-writer-server.js "/path/to/JD Text.txt" 4545
-```
-
-Behavior:
-- if the target file is empty, it writes the JD directly with `Company`, `Role`, and `Job Link` header lines, plus `Apply Link` when available
-- if the target file already has content, it appends a newline and then the new JD text
-- if the helper is not running, normal clipboard copy still works
