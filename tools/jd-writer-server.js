@@ -218,6 +218,57 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  if (req.method === 'POST' && urlPath === '/jd-image') {
+    let raw = '';
+    req.setEncoding('utf8');
+    req.on('data', chunk => { raw += chunk; if (raw.length > 50 * 1024 * 1024) req.destroy(); });
+    req.on('end', () => {
+      try {
+        const payload   = raw ? JSON.parse(raw) : {};
+        const company   = typeof payload.company   === 'string' ? payload.company.trim()   : 'Unknown Company';
+        const role      = typeof payload.role      === 'string' ? payload.role.trim()      : 'Unknown Role';
+        const sourceUrl = typeof payload.sourceUrl === 'string' ? payload.sourceUrl.trim() : '';
+        const images    = Array.isArray(payload.images) ? payload.images.filter(s => typeof s === 'string' && s.startsWith('data:image/')) : [];
+
+        if (images.length === 0) { send(res, 400, { ok: false, error: 'No valid images provided' }); return; }
+
+        const existing   = fs.existsSync(outputFile) ? fs.readFileSync(outputFile, 'utf8') : '';
+        const headerNums = existing.trim().length === 0 ? [] : [...existing.matchAll(/^(\d+)\. Company -/gm)].map(m => parseInt(m[1], 10));
+        const entryNum   = headerNums.length === 0 ? 1 : Math.max(...headerNums) + 1;
+
+        // Save each image as a file next to the .md, same as VS Code native paste
+        const outputDir = path.dirname(outputFile);
+        const toSlug = s => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 30);
+        const imgFilenames = images.map((dataUrl, i) => {
+          const ext = dataUrl.match(/^data:image\/(\w+);/)?.[1] || 'png';
+          const filename = `${toSlug(company)}-${toSlug(role)}-${i + 1}.${ext}`;
+          const base64Data = dataUrl.replace(/^data:image\/\w+;base64,/, '');
+          fs.writeFileSync(path.join(outputDir, filename), Buffer.from(base64Data, 'base64'));
+          return filename;
+        });
+
+        const linkLines = [];
+        if (sourceUrl) linkLines.push(`Job Link - ${sourceUrl}`);
+
+        const header = [`${entryNum}. Company - ${company}`, `Role - ${role}`, ...linkLines].join('\n');
+        const imgLines = imgFilenames.map(f => `![](${f})`).join('\n\n');
+        const textToWrite = `${header}\n\n${imgLines}`.trim();
+        const separator = '\n\n\n';
+        const nextText = existing.trim().length === 0
+          ? textToWrite
+          : `${existing.replace(/\s*$/, '')}${separator}${textToWrite}`;
+
+        fs.writeFileSync(outputFile, nextText, 'utf8');
+        console.log(`[${new Date().toISOString()}] Wrote JD image entry (${images.length} image${images.length !== 1 ? 's' : ''}) to ${outputFile}`);
+        send(res, 200, { ok: true, outputFile });
+      } catch (error) {
+        send(res, 500, { ok: false, error: error instanceof Error ? error.message : String(error) });
+      }
+    });
+    req.on('error', error => send(res, 500, { ok: false, error: error.message }));
+    return;
+  }
+
   if (req.method !== 'POST' || urlPath !== '/jd') {
     send(res, 404, { ok: false, error: 'Not found' });
     return;
@@ -295,6 +346,7 @@ const server = http.createServer((req, res) => {
 server.listen(port, '127.0.0.1', () => {
   console.log(`JD writer listening at http://127.0.0.1:${port}`);
   console.log(`  POST /jd          — clean + write JD to file`);
+  console.log(`  POST /jd-image    — write JD image entry (base64 inline) to file`);
   console.log(`  POST /answer-prep — pre-clean JD for answer modal`);
   console.log(`  POST /answer      — answer application questions`);
   console.log(`Writing to: ${outputFile}`);

@@ -747,6 +747,159 @@ document.getElementById('pasteJdModal')?.addEventListener('click', (e) => {
     document.getElementById('pasteJdModal').classList.remove('open');
 });
 
+// ── Paste JD Image Modal ──────────────────────────────────────────────────────
+
+let _pasteJdImgList = []; // { dataUrl: string }[]
+
+async function handlePasteJdImg() {
+  const modal = document.getElementById('pasteJdImgModal');
+  if (!modal) return;
+
+  const companyRaw = companyEl?.textContent?.trim() || '';
+  const company = companyRaw.charAt(0).toUpperCase() + companyRaw.slice(1);
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  let role = '';
+  if (tab) {
+    const details = await getJobDetailsFromPage(tab.id, tab.url);
+    role = details.role || '';
+  }
+
+  document.getElementById('pasteJdImgCompany').value = company;
+  document.getElementById('pasteJdImgRole').value = role;
+  document.getElementById('pasteJdImgStatus').textContent = '';
+  document.getElementById('pasteJdImgSaveBtn').textContent = 'Save';
+  modal.dataset.sourceUrl = normalizeJobSourceUrl(tab?.url || '');
+
+  _pasteJdImgList = [];
+  _renderImgPreviews();
+
+  modal.classList.add('open');
+  setTimeout(() => document.getElementById('pasteJdImgDropArea').focus(), 50);
+}
+
+function _renderImgPreviews() {
+  const container = document.getElementById('pasteJdImgPreviews');
+  if (!container) return;
+  container.innerHTML = '';
+  _pasteJdImgList.forEach((item, idx) => {
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'position:relative;display:inline-block';
+    const img = document.createElement('img');
+    img.src = item.dataUrl;
+    img.style.cssText = 'max-width:120px;max-height:90px;border:1px solid #ddd;border-radius:4px;display:block;cursor:zoom-in';
+    img.addEventListener('click', () => {
+      const lb = document.getElementById('imgLightbox');
+      const lbImg = document.getElementById('imgLightboxImg');
+      if (!lb || !lbImg) return;
+      lbImg.src = item.dataUrl;
+      lb.classList.add('open');
+    });
+    const removeBtn = document.createElement('button');
+    removeBtn.textContent = '×';
+    removeBtn.title = 'Remove';
+    removeBtn.style.cssText = 'position:absolute;top:2px;right:2px;background:#e74c3c;color:#fff;border:none;border-radius:50%;width:16px;height:16px;font-size:11px;line-height:1;cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center';
+    removeBtn.addEventListener('click', () => {
+      _pasteJdImgList.splice(idx, 1);
+      _renderImgPreviews();
+    });
+    wrap.appendChild(img);
+    wrap.appendChild(removeBtn);
+    container.appendChild(wrap);
+  });
+}
+
+function _handleImgPaste(e) {
+  const modal = document.getElementById('pasteJdImgModal');
+  if (!modal?.classList.contains('open')) return;
+  const items = e.clipboardData?.items || [];
+  for (const item of items) {
+    if (!item.type.startsWith('image/')) continue;
+    const file = item.getAsFile();
+    if (!file) continue;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      _pasteJdImgList.push({ dataUrl: ev.target.result });
+      _renderImgPreviews();
+      document.getElementById('pasteJdImgStatus').textContent = '';
+    };
+    reader.readAsDataURL(file);
+  }
+}
+
+document.addEventListener('paste', _handleImgPaste);
+
+document.getElementById('pasteJdImgDropArea')?.addEventListener('keydown', (e) => {
+  if (e.key === 'v' && (e.ctrlKey || e.metaKey)) return; // let paste event fire
+});
+
+async function _savePasteJdImg() {
+  const companyRaw = document.getElementById('pasteJdImgCompany').value.trim() || 'Unknown Company';
+  const company = companyRaw.charAt(0).toUpperCase() + companyRaw.slice(1);
+  const role = document.getElementById('pasteJdImgRole').value.trim() || 'Unknown Role';
+  const statusEl = document.getElementById('pasteJdImgStatus');
+  const saveBtn = document.getElementById('pasteJdImgSaveBtn');
+  const modal = document.getElementById('pasteJdImgModal');
+
+  if (_pasteJdImgList.length === 0) {
+    statusEl.style.color = '#c0392b';
+    statusEl.textContent = 'Paste at least one image first.';
+    return;
+  }
+
+  saveBtn.textContent = 'Saving…';
+  saveBtn.disabled = true;
+
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 30000);
+    const resp = await fetch('http://127.0.0.1:4545/jd-image', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      signal: controller.signal,
+      body: JSON.stringify({
+        company,
+        role,
+        sourceUrl: modal?.dataset?.sourceUrl || '',
+        images: _pasteJdImgList.map(i => i.dataUrl),
+      }),
+    });
+    clearTimeout(timer);
+    const json = await resp.json();
+    if (json.ok) {
+      statusEl.style.color = '#27ae60';
+      statusEl.textContent = `✓ Saved ${_pasteJdImgList.length} image${_pasteJdImgList.length !== 1 ? 's' : ''}!`;
+      _pasteJdImgList = [];
+      _renderImgPreviews();
+      document.getElementById('pasteJdImgCompany').value = '';
+      document.getElementById('pasteJdImgRole').value = '';
+      setTimeout(() => { document.getElementById('pasteJdImgModal').classList.remove('open'); }, 800);
+    } else {
+      throw new Error(json.error || 'Server error');
+    }
+  } catch (err) {
+    statusEl.style.color = '#c0392b';
+    statusEl.textContent = err.name === 'AbortError' ? 'Timed out — is the server running?' : `Failed — ${err.message}`;
+  }
+
+  saveBtn.disabled = false;
+  saveBtn.textContent = 'Save';
+}
+
+document.getElementById('pasteJdImgSaveBtn')?.addEventListener('click', _savePasteJdImg);
+document.getElementById('pasteJdImgCloseBtn')?.addEventListener('click', () => {
+  document.getElementById('pasteJdImgModal').classList.remove('open');
+});
+document.getElementById('pasteJdImgXBtn')?.addEventListener('click', () => {
+  document.getElementById('pasteJdImgModal').classList.remove('open');
+});
+
+// Lightbox
+document.getElementById('imgLightbox')?.addEventListener('click', () => {
+  document.getElementById('imgLightbox').classList.remove('open');
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 async function handleOpenJob() {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   const url = tab?.url || '';

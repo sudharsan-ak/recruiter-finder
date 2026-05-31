@@ -234,6 +234,36 @@
     </div>
   </div>
 
+  <!-- Paste JD Image Modal -->
+  <div class="modal-overlay" id="pasteJdImgModal" tabindex="-1">
+    <div class="modal">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <h2 style="margin-bottom:0">&#128247; Paste JD Image</h2>
+        <button id="pasteJdImgXBtn" style="background:none;border:none;font-size:16px;cursor:pointer;color:#888;line-height:1;padding:0">&#x2715;</button>
+      </div>
+      <div class="modal-field">
+        <label>Company</label>
+        <input type="text" id="pasteJdImgCompany" placeholder="e.g. Google" />
+      </div>
+      <div class="modal-field">
+        <label>Role</label>
+        <input type="text" id="pasteJdImgRole" placeholder="e.g. Software Engineer" />
+      </div>
+      <div class="modal-field">
+        <label>Images <span style="font-weight:normal;color:#888">(Ctrl+V to paste)</span></label>
+        <div id="pasteJdImgDropArea" style="border:2px dashed #ccc;border-radius:6px;min-height:80px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#aaa;font-size:12px;padding:10px;box-sizing:border-box;outline:none" tabindex="0">
+          Click here, then Ctrl+V to paste a screenshot
+        </div>
+        <div id="pasteJdImgPreviews" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px"></div>
+      </div>
+      <div id="pasteJdImgStatus" style="font-size:11px;min-height:14px;margin-top:4px"></div>
+      <div class="modal-actions">
+        <button id="pasteJdImgCloseBtn">Close</button>
+        <button id="pasteJdImgSaveBtn">Save</button>
+      </div>
+    </div>
+  </div>
+
   <!-- My Profile / Settings Modal -->
   <div class="modal-overlay" id="myProfileModal" tabindex="-1">
     <div class="modal">
@@ -352,6 +382,9 @@
       <button id="histOpenSelected">↗ Open Tabs</button>
     </div>
   </div>
+
+  <!-- Image lightbox -->
+  <div id="imgLightbox"><img id="imgLightboxImg" src="" alt="" /></div>
 
   <script src="popup.js"></script>
   <script src="ui/history-options.js"></script>

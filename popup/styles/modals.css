@@ -147,6 +147,52 @@
 
 #pasteJdCancelBtn:hover { background: #f5f5f5; }
 
+#pasteJdImgSaveBtn {
+  flex: 1;
+  background: #0a66c2;
+  color: white;
+  border: none;
+  padding: 8px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+#pasteJdImgSaveBtn:hover { background: #004182; }
+#pasteJdImgSaveBtn:disabled { background: #aaa; cursor: default; }
+
+#pasteJdImgCloseBtn {
+  flex: 1;
+  background: white;
+  color: #666;
+  border: 1.5px solid #ccc;
+  padding: 8px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+#pasteJdImgCloseBtn:hover { background: #f5f5f5; }
+
+/* Image lightbox */
+#imgLightbox {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.85);
+  z-index: 200;
+  align-items: center;
+  justify-content: center;
+  cursor: zoom-out;
+}
+#imgLightbox.open { display: flex; }
+#imgLightbox img {
+  max-width: 95%;
+  max-height: 95%;
+  border-radius: 6px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.5);
+}
+
 /* My Profile Settings modal */
 #myProfileSaveBtn {
   flex: 1;
