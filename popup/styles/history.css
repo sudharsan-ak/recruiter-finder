@@ -122,118 +122,43 @@
 }
 
 .history-options-menu {
-  display: none;
   position: absolute;
-  right: 0;
   top: calc(100% + 6px);
-  width: 252px;
-  background: white;
-  border: 1px solid #e6e6e6;
-  border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
-  padding: 8px;
+  min-width: 190px;
   z-index: 30;
-}
-
-.history-options-menu.open { display: block; }
-
-.history-options-menu button {
-  width: 100%;
-  margin: 0 0 6px;
-}
-
-.history-options-menu #clearHistoryBtn {
-  margin: 0;
-}
-
-.history-menu-top-btn,
-.history-options-menu #clearHistoryBtn {
-  background: white;
-  color: #555;
-  border: 1.5px solid #ccc;
-  padding: 7px 16px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.history-menu-top-btn:hover {
-  background: #f5f7fb;
-  border-color: #0a66c2;
-  color: #0a66c2;
 }
 
 .history-submenu {
   display: none;
-  margin: 2px 0 8px;
+  margin: 2px 8px 4px;
   padding: 8px;
-  border-radius: 10px;
-  background: #f8fbff;
-  border: 1px solid #e3eefc;
+  border-radius: 8px;
+  background: #f8f8f8;
+  border: 1px solid #e8e8e8;
 }
-
 .history-submenu.open { display: block; }
+.history-submenu button {
+  display: block; width: 100%; text-align: left;
+  background: none; border: none; padding: 6px 8px;
+  font-size: 12px; color: #333; cursor: pointer; border-radius: 4px;
+  font-family: inherit;
+}
+.history-submenu button:hover { background: #f0f0f0; color: #0a66c2; }
 
 .history-submenu-label {
-  font-size: 10px;
-  font-weight: 700;
-  color: #7b8ca6;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  margin: 0 0 6px;
+  font-size: 10px; font-weight: 700; color: #999;
+  text-transform: uppercase; letter-spacing: 0.05em;
+  padding: 4px 0 2px;
 }
-
 .history-submenu-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 6px;
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin-bottom: 4px;
 }
-
-.history-submenu-grid + .history-submenu-label {
-  margin-top: 8px;
+.history-submenu-grid button {
+  padding: 5px 4px; font-size: 11px; text-align: center;
+  border: 1px solid #ddd !important; border-radius: 6px !important;
+  background: #fff !important; color: #0a66c2 !important;
 }
-
-.history-options-menu #addRecruiterBtn,
-.history-options-menu #refreshLogosBtn,
-.history-options-menu #updateSlugsBtn,
-.history-options-menu #exportCsvBtn,
-.history-options-menu #exportXlsxBtn,
-.history-options-menu #exportBackupBtn,
-.history-options-menu #importCsvBtn,
-.history-options-menu #importJsonBtn,
-.history-options-menu #importXlsxBtn {
-  background: white;
-  border: 1.5px solid #0a66c2;
-  color: #0a66c2;
-  padding: 7px 10px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.history-options-menu #addRecruiterBtn:hover,
-.history-options-menu #refreshLogosBtn:hover,
-.history-options-menu #updateSlugsBtn:hover,
-.history-options-menu #exportCsvBtn:hover,
-.history-options-menu #exportXlsxBtn:hover,
-.history-options-menu #exportBackupBtn:hover,
-.history-options-menu #importCsvBtn:hover,
-.history-options-menu #importJsonBtn:hover,
-.history-options-menu #importXlsxBtn:hover {
-  background: #e8f0fe;
-}
-
-.history-options-menu #clearHistoryBtn {
-  background: white;
-  color: #c0392b;
-  border: 1.5px solid #c0392b;
-}
-
-.history-options-menu #clearHistoryBtn:hover {
-  background: #fdecea;
-}
+.history-submenu-grid button:hover { background: #e8f0fe !important; }
 
 .history-selection-bar {
   display: none;

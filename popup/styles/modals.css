@@ -147,6 +147,33 @@
 
 #pasteJdCancelBtn:hover { background: #f5f5f5; }
 
+#outreachSaveBtn {
+  flex: 1;
+  background: #0a66c2;
+  color: white;
+  border: none;
+  padding: 8px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+#outreachSaveBtn:hover { background: #004182; }
+#outreachSaveBtn:disabled { background: #aaa; cursor: default; }
+
+#outreachCancelBtn {
+  flex: 1;
+  background: white;
+  color: #666;
+  border: 1.5px solid #ccc;
+  padding: 8px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+#outreachCancelBtn:hover { background: #f5f5f5; }
+
 #pasteJdImgSaveBtn {
   flex: 1;
   background: #0a66c2;

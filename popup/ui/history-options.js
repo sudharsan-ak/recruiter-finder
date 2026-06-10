@@ -20,11 +20,12 @@ function closeHistorySubmenus() {
 
 historyOptionsBtn?.addEventListener('click', e => {
   e.stopPropagation();
-  historyOptionsMenu?.classList.toggle('open');
-  if (!historyOptionsMenu?.classList.contains('open')) closeHistorySubmenus();
+  const isOpen = historyOptionsMenu?.style.display !== 'none';
+  historyOptionsMenu.style.display = isOpen ? 'none' : '';
+  if (isOpen) closeHistorySubmenus();
 });
 
-manageMenuBtn?.addEventListener('click', e => {
+document.getElementById('manageMenuBtn')?.addEventListener('click', e => {
   e.stopPropagation();
   const submenu = document.getElementById('manageSubmenu');
   const willOpen = !submenu?.classList.contains('open');
@@ -32,7 +33,7 @@ manageMenuBtn?.addEventListener('click', e => {
   if (willOpen) submenu?.classList.add('open');
 });
 
-transferMenuBtn?.addEventListener('click', e => {
+document.getElementById('transferMenuBtn')?.addEventListener('click', e => {
   e.stopPropagation();
   const submenu = document.getElementById('transferSubmenu');
   const willOpen = !submenu?.classList.contains('open');
@@ -41,9 +42,9 @@ transferMenuBtn?.addEventListener('click', e => {
 });
 
 document.addEventListener('click', e => {
-  if (!historyOptionsMenu?.classList.contains('open')) return;
+  if (!historyOptionsMenu || historyOptionsMenu.style.display === 'none') return;
   if (historyOptionsMenu.contains(e.target) || historyOptionsBtn?.contains(e.target)) return;
-  historyOptionsMenu.classList.remove('open');
+  historyOptionsMenu.style.display = 'none';
   closeHistorySubmenus();
 });
 
@@ -51,7 +52,7 @@ document.addEventListener('click', e => {
   .forEach(id => {
     document.getElementById(id)?.addEventListener('click', () => {
       setTimeout(() => {
-        historyOptionsMenu?.classList.remove('open');
+        historyOptionsMenu.style.display = 'none';
         closeHistorySubmenus();
       }, 0);
     });

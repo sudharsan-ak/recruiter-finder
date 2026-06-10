@@ -23,6 +23,7 @@ A Chrome extension (Manifest V3) that automatically finds recruiters at any comp
 | **📷 Paste JD IMG** | Paste job description screenshots — saved as image files with markdown links |
 | **Answer** | AI-generated answers to job application questions using your profile + the JD |
 | **Company Meta** | Shows employee count, visa status, experience required, and tech stack for the current job |
+| **Send to Outreach** *(personal)* | Sends selected recruiter links to a local server endpoint that appends them to a personal outreach tracking file - not for general use |
 
 → [Full feature details](docs/features.md)
 

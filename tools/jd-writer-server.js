@@ -218,6 +218,67 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  if (req.method === 'POST' && urlPath === '/outreach') {
+    let raw = '';
+    req.setEncoding('utf8');
+    req.on('data', chunk => { raw += chunk; if (raw.length > 1024 * 1024) req.destroy(); });
+    req.on('end', () => {
+      try {
+        const payload = raw ? JSON.parse(raw) : {};
+        const company = typeof payload.company === 'string' ? payload.company.trim() : 'Unknown Company';
+        const role    = typeof payload.role    === 'string' ? payload.role.trim()    : 'Unknown Role';
+        const links   = Array.isArray(payload.links) ? payload.links.filter(s => typeof s === 'string' && s.trim()) : [];
+
+        if (links.length === 0) { send(res, 400, { ok: false, error: 'No links provided' }); return; }
+
+        const outreachFile = process.env.OUTREACH_FILE || 'C:\\Users\\sudha\\VS Code Files\\job-autopilot\\src\\cli\\recruiterOutreach.js';
+        const fileContent = fs.existsSync(outreachFile) ? fs.readFileSync(outreachFile, 'utf8') : `export const recruiterOutreach = [\n];\n`;
+
+        // Determine comment state from last entry — find last occurrence of `// {` or bare `  {`
+        const lastCommentedIdx = fileContent.lastIndexOf('  // {');
+        const lastUncommentedIdx = fileContent.lastIndexOf('  {');
+        const useComment = lastCommentedIdx >= lastUncommentedIdx;
+
+        let block;
+        if (useComment) {
+          block = [
+            `  // {`,
+            `  //   company: "${company}",`,
+            `  //   role: "${role}",`,
+            `  //   links: [`,
+            ...links.map(l => `  //     "${l}"`),
+            `  //   ]`,
+            `  // }`,
+          ].join('\n');
+        } else {
+          block = [
+            `  {`,
+            `    company: "${company}",`,
+            `    role: "${role}",`,
+            `    links: [`,
+            ...links.map(l => `      "${l}"`),
+            `    ]`,
+            `  }`,
+          ].join('\n');
+        }
+
+        const closingI = fileContent.lastIndexOf('];');
+        if (closingI === -1) { send(res, 500, { ok: false, error: 'Could not find closing ]; in outreach file' }); return; }
+
+        const beforeClose = fileContent.slice(0, closingI).replace(/\s*$/, '');
+        const newContent = `${beforeClose}\n${block}\n];\n`;
+
+        fs.writeFileSync(outreachFile, newContent, 'utf8');
+        console.log(`[${new Date().toISOString()}] Appended outreach entry: ${company} (${links.length} links, ${useComment ? 'commented' : 'uncommented'})`);
+        send(res, 200, { ok: true });
+      } catch (error) {
+        send(res, 500, { ok: false, error: error instanceof Error ? error.message : String(error) });
+      }
+    });
+    req.on('error', error => send(res, 500, { ok: false, error: error.message }));
+    return;
+  }
+
   if (req.method === 'POST' && urlPath === '/jd-image') {
     let raw = '';
     req.setEncoding('utf8');
@@ -346,7 +407,8 @@ const server = http.createServer((req, res) => {
 server.listen(port, '127.0.0.1', () => {
   console.log(`JD writer listening at http://127.0.0.1:${port}`);
   console.log(`  POST /jd          — clean + write JD to file`);
-  console.log(`  POST /jd-image    — write JD image entry (base64 inline) to file`);
+  console.log(`  POST /jd-image    — write JD image entry to file`);
+  console.log(`  POST /outreach    — append recruiter links to recruiterOutreach.js`);
   console.log(`  POST /answer-prep — pre-clean JD for answer modal`);
   console.log(`  POST /answer      — answer application questions`);
   console.log(`Writing to: ${outputFile}`);

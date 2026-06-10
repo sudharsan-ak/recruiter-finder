@@ -247,6 +247,14 @@
 .h-email-filter-btn:hover { border-color: #0a66c2; color: #0a66c2; }
 .h-email-filter-btn.active { border-color: #0a66c2; color: #0a66c2; background: #e8f0fe; font-weight: 600; }
 
+.h-dot-menu-btn {
+  font-size: 13px; padding: 1px 6px; border-radius: 6px;
+  border: 1px solid #ccc; background: none; color: #555; cursor: pointer;
+  line-height: 1; flex-shrink: 0;
+}
+.h-dot-menu-btn:hover { border-color: #0a66c2; color: #0a66c2; background: #e8f0fe; }
+.h-dot-menu { position: absolute; }
+
 .history-company-actions { display: flex; gap: 6px; padding: 4px 0 2px; }
 .history-company-actions button {
   font-size: 10px; padding: 3px 10px; border-radius: 10px;

@@ -135,6 +135,15 @@ async function renderHistory(filter = '') {
               `<span class="alias-chip">${a}<button class="remove-alias-btn" data-slug="${slug}" data-alias="${a}">×</button></span>`
             ).join('')}
             <button class="add-alias-btn" data-slug="${slug}">＋</button>
+            ${recruiters.length > 0 ? `<div class="h-dot-menu-wrap" style="margin-left:auto;position:relative">
+              <button class="h-dot-menu-btn" data-slug="${slug}" title="More options">⋯</button>
+              <div class="h-dot-menu dd-menu" id="hdm-${slug}" style="display:none">
+                <button class="h-dot-copy-both dd-item" data-slug="${slug}">Copy Links + Emails</button>
+                <button class="h-dot-outreach dd-item" data-slug="${slug}" data-name="${displayName}">Send to Outreach</button>
+                <div class="dd-sep"></div>
+                <button class="h-dot-delete-selected dd-item danger" data-slug="${slug}">Delete Selected</button>
+              </div>
+            </div>` : ''}
           </div>
           <div class="history-recruiter-list-wrap">
             ${recruiters.length > 0 ? `
@@ -151,8 +160,6 @@ async function renderHistory(filter = '') {
             ? `<div class="history-company-actions">
                 <button class="copy-history-selected-btn" data-slug="${slug}" style="display:none">📋 Copy Selected Links</button>
                 <button class="copy-history-selected-emails-btn" data-slug="${slug}" style="display:none">✉ Copy Emails</button>
-                <button class="copy-history-selected-both-btn" data-slug="${slug}" style="display:none">⎘ Copy Links + Emails</button>
-                <button class="delete-history-selected-btn" data-slug="${slug}" style="display:none">🗑 Delete</button>
                 <button class="clear-history-selected-btn" data-slug="${slug}" style="display:none">✕ Clear</button>
                 <button class="copy-history-btn" data-slug="${slug}">📋 Copy All Links</button>
                 <button class="copy-history-emails-btn" data-slug="${slug}">✉ Copy All Emails</button>
@@ -236,16 +243,12 @@ async function renderHistory(filter = '') {
       const hasSelection = companyChecked.length > 0;
       const copyBtn        = card.querySelector('.copy-history-selected-btn');
       const copyEmailsBtn  = card.querySelector('.copy-history-selected-emails-btn');
-      const copyBothBtn    = card.querySelector('.copy-history-selected-both-btn');
-      const deleteBtn      = card.querySelector('.delete-history-selected-btn');
       const clearBtn       = card.querySelector('.clear-history-selected-btn');
       const copyAllBtn     = card.querySelector('.copy-history-btn');
       const copyAllEmailsBtn = card.querySelector('.copy-history-emails-btn');
       const openAllBtn     = card.querySelector('.open-history-btn');
       if (copyBtn)         copyBtn.style.display        = hasSelection ? '' : 'none';
       if (copyEmailsBtn)   copyEmailsBtn.style.display  = hasSelection ? '' : 'none';
-      if (copyBothBtn)     copyBothBtn.style.display    = hasSelection ? '' : 'none';
-      if (deleteBtn)       deleteBtn.style.display      = hasSelection ? '' : 'none';
       if (clearBtn)        clearBtn.style.display       = hasSelection ? '' : 'none';
       if (copyAllBtn)      copyAllBtn.style.display     = hasSelection ? 'none' : '';
       if (copyAllEmailsBtn) copyAllEmailsBtn.style.display = hasSelection ? 'none' : '';
@@ -313,12 +316,88 @@ async function renderHistory(filter = '') {
     });
   });
 
-  document.querySelectorAll('.delete-history-selected-btn').forEach(btn => {
-    btn.addEventListener('click', async e => {
+  // ── ⋯ dot-menu per company ────────────────────────────────────────────────
+
+  document.querySelectorAll('.h-dot-menu-btn').forEach(btn => {
+    btn.addEventListener('click', e => {
       e.stopPropagation();
       const slug = btn.dataset.slug;
+      const menu = document.getElementById(`hdm-${slug}`);
+      if (!menu) return;
+      const isOpen = menu.style.display !== 'none';
+      // close all other open menus
+      document.querySelectorAll('.h-dot-menu').forEach(m => { m.style.display = 'none'; });
+      menu.style.display = isOpen ? 'none' : '';
+    });
+  });
+
+  document.addEventListener('click', e => {
+    if (!e.target.closest('.h-dot-menu-wrap')) {
+      document.querySelectorAll('.h-dot-menu').forEach(m => { m.style.display = 'none'; });
+    }
+  }, { capture: true });
+
+  document.querySelectorAll('.h-dot-copy-both').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      document.querySelectorAll('.h-dot-menu').forEach(m => { m.style.display = 'none'; });
+      const slug = btn.dataset.slug;
       const checked = [...historyList.querySelectorAll(`#hist-${slug} .h-check:checked`)];
-      if (!checked.length) return;
+      const targetRows = checked.length
+        ? checked.map(cb => cb.closest('.history-recruiter-row')).filter(Boolean)
+        : visibleRows(slug);
+      const urls   = targetRows.map(r => r.dataset.url).filter(Boolean);
+      const emails = targetRows.map(r => r.querySelector('.h-copy-email')?.dataset.email || '').filter(Boolean);
+      const text = emails.length ? `${urls.join('\n')}\n\n${emails.join('\n')}` : urls.join('\n');
+      if (!text) return;
+      navigator.clipboard.writeText(text).then(() => {
+        const orig = btn.textContent;
+        btn.textContent = '✅ Copied!';
+        setTimeout(() => { btn.textContent = orig; }, 1500);
+      });
+    });
+  });
+
+  document.querySelectorAll('.h-dot-outreach').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      document.querySelectorAll('.h-dot-menu').forEach(m => { m.style.display = 'none'; });
+      const slug = btn.dataset.slug;
+      const checked = [...historyList.querySelectorAll(`#hist-${slug} .h-check:checked`)];
+      const targetRows = checked.length
+        ? checked.map(cb => cb.closest('.history-recruiter-row')).filter(Boolean)
+        : visibleRows(slug);
+      const links = targetRows.map(r => r.dataset.url).filter(Boolean);
+      if (!links.length) return;
+      const names = targetRows.map(r => r.querySelector('.h-name')?.textContent?.trim()).filter(Boolean);
+      const displayName = btn.dataset.name || slug.replace(/-/g, ' ');
+      const company = displayName.charAt(0).toUpperCase() + displayName.slice(1);
+
+      // reuse the outreach modal from Search tab
+      window._outreachLinks = links;
+      document.getElementById('outreachCompany').value = company;
+      document.getElementById('outreachRole').value = '';
+      document.getElementById('outreachStatus').textContent = '';
+      document.getElementById('outreachSaveBtn').textContent = 'Save';
+      const countEl = document.getElementById('outreachLinkCount');
+      countEl.innerHTML = `${links.length} recruiter${links.length !== 1 ? 's' : ''} selected<br><span style="font-size:11px;color:#888">${names.join(', ')}</span>`;
+      document.getElementById('outreachModal').classList.add('open');
+      setTimeout(() => document.getElementById('outreachRole').focus(), 50);
+    });
+  });
+
+  document.querySelectorAll('.h-dot-delete-selected').forEach(btn => {
+    btn.addEventListener('click', async e => {
+      e.stopPropagation();
+      document.querySelectorAll('.h-dot-menu').forEach(m => { m.style.display = 'none'; });
+      const slug = btn.dataset.slug;
+      const checked = [...historyList.querySelectorAll(`#hist-${slug} .h-check:checked`)];
+      if (!checked.length) {
+        btn.textContent = 'Select recruiters first';
+        btn.style.color = '#c0392b';
+        setTimeout(() => { btn.textContent = '🗑 Delete Selected'; btn.style.color = ''; }, 2000);
+        return;
+      }
       const companyName = document.getElementById(`hn-${slug}`)?.textContent?.trim() || slug;
       const n = checked.length;
       const confirmed = await (globalThis.openConfirmModal?.({
@@ -424,26 +503,6 @@ async function renderHistory(filter = '') {
     });
   });
 
-  document.querySelectorAll('.copy-history-selected-both-btn').forEach(btn => {
-    btn.addEventListener('click', e => {
-      e.stopPropagation();
-      const slug = btn.dataset.slug;
-      const checked = [...historyList.querySelectorAll(`#hist-${slug} .h-check:checked`)];
-      const urls   = checked.map(cb => cb.dataset.url).filter(Boolean);
-      const emails = checked
-        .map(cb => cb.closest('.history-recruiter-row')?.querySelector('.h-copy-email')?.dataset.email || '')
-        .filter(Boolean);
-      const text = emails.length
-        ? `${urls.join('\n')}\n\n${emails.join('\n')}`
-        : urls.join('\n');
-      if (!text) return;
-      navigator.clipboard.writeText(text).then(() => {
-        const orig = btn.textContent;
-        btn.textContent = '✅ Copied!';
-        setTimeout(() => { btn.textContent = orig; }, 1500);
-      });
-    });
-  });
 
   document.querySelectorAll('.h-email-filter-btn').forEach(btn => {
     btn.addEventListener('click', e => {

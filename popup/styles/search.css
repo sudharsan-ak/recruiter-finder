@@ -1,3 +1,46 @@
+/* ── Shared dropdown menu system ─────────────────────────────────────────── */
+.dd-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 4px);
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.13);
+  min-width: 170px;
+  z-index: 999;
+  padding: 4px 0;
+}
+.dd-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 7px 16px;
+  font-size: 12px;
+  color: #333;
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+}
+.dd-item:hover { background: #f5f5f5; color: #0a66c2; }
+.dd-item.active { color: #0a66c2; font-weight: 600; }
+.dd-item.danger { color: #c0392b; }
+.dd-item.danger:hover { background: #fdecea; color: #c0392b; }
+.dd-sep { height: 1px; background: #ebebeb; margin: 4px 0; }
+.dd-label {
+  display: block;
+  padding: 5px 16px 2px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #999;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  cursor: default;
+}
+/* ── End shared dropdown ─────────────────────────────────────────────────── */
+
 #results {
   margin-top: 10px;
   max-height: 400px;
@@ -35,33 +78,13 @@
 }
 #resultsOptionsBtn:hover { border-color: #0a66c2; color: #0a66c2; background: #f0f5ff; }
 
-#resultsOptionsMenu {
-  position: absolute;
-  right: 0;
-  top: calc(100% + 4px);
-  background: white;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.12);
-  min-width: 150px;
-  z-index: 999;
-  padding: 4px 0;
-}
+#resultsOptionsMenu { min-width: 180px; }
 
-.options-menu-item {
-  display: block;
-  width: 100%;
-  text-align: left;
-  background: none;
-  border: none;
-  padding: 6px 14px;
-  font-size: 11px;
-  color: #333;
-  cursor: pointer;
-}
-.options-menu-item:hover { background: #f0f5ff; color: #0a66c2; }
+/* legacy aliases — keep so existing .options-menu-item refs still work */
+.options-menu-item { display: block; width: 100%; text-align: left; background: none; border: none; padding: 7px 16px; font-size: 12px; color: #333; cursor: pointer; font-family: inherit; white-space: nowrap; }
+.options-menu-item:hover { background: #f5f5f5; color: #0a66c2; }
 .options-menu-item.active { color: #0a66c2; font-weight: 600; }
-.options-menu-sep { height: 1px; background: #eee; margin: 4px 0; }
+.options-menu-sep { height: 1px; background: #ebebeb; margin: 4px 0; }
 
 .ctrl-btn {
   background: none;

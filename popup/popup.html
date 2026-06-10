@@ -21,9 +21,9 @@
     <div class="tab-context">
       <div class="tab-menu-wrap">
         <button id="tabMenuBtn" title="More options">☰</button>
-        <div id="tabMenuDropdown" style="display:none">
-          <button class="tab-menu-item" id="tabMenuBulk">📋 Bulk Scan</button>
-          <button class="tab-menu-item" id="tabMenuSettings">⚙ Settings</button>
+        <div id="tabMenuDropdown" class="dd-menu" style="display:none">
+          <button class="dd-item" id="tabMenuBulk">Bulk Scan</button>
+          <button class="dd-item" id="tabMenuSettings">Settings</button>
         </div>
       </div>
     </div>
@@ -105,16 +105,19 @@
         <button id="clearResultsSearch" title="Clear filter" style="display:none">✕</button>
         <div class="results-options-wrap">
           <button id="resultsOptionsBtn">≡ Options</button>
-          <div id="resultsOptionsMenu" style="display:none">
-            <button class="options-menu-item toggle-item" id="filterHasEmail">✉ Has Email only</button>
-            <button class="options-menu-item toggle-item" id="filterNoEmail">✉ No Email only</button>
-            <div class="options-menu-sep"></div>
-            <button class="options-menu-item" id="expandAllSections">▾ Expand All</button>
-            <button class="options-menu-item" id="collapseAllSections">▸ Collapse All</button>
-            <button class="options-menu-item" id="openAllRecruiters">↗ Open All</button>
-            <button class="options-menu-item" id="copyAllLinks">📋 Copy All Links</button>
-            <button class="options-menu-item" id="copyAllEmails">✉ Copy All Emails</button>
-            <button class="options-menu-item" id="copyAllBoth">⎘ Copy Links + Emails</button>
+          <div id="resultsOptionsMenu" class="dd-menu" style="display:none">
+            <button class="dd-item toggle-item" id="filterHasEmail">Has Email only</button>
+            <button class="dd-item toggle-item" id="filterNoEmail">No Email only</button>
+            <div class="dd-sep"></div>
+            <button class="dd-item" id="expandAllSections">Expand All</button>
+            <button class="dd-item" id="collapseAllSections">Collapse All</button>
+            <div class="dd-sep"></div>
+            <button class="dd-item" id="openAllRecruiters">Open All</button>
+            <button class="dd-item" id="copyAllLinks">Copy All Links</button>
+            <button class="dd-item" id="copyAllEmails">Copy All Emails</button>
+            <button class="dd-item" id="copyAllBoth">Copy Links + Emails</button>
+            <div class="dd-sep"></div>
+            <button class="dd-item" id="sendToOutreachBtn">Send to Outreach</button>
           </div>
         </div>
       </div>
@@ -234,6 +237,30 @@
     </div>
   </div>
 
+  <!-- Send to Outreach Modal -->
+  <div class="modal-overlay" id="outreachModal" tabindex="-1">
+    <div class="modal">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <h2 style="margin-bottom:0">↗ Send to Outreach</h2>
+        <button id="outreachXBtn" style="background:none;border:none;font-size:16px;cursor:pointer;color:#888;line-height:1;padding:0">&#x2715;</button>
+      </div>
+      <div class="modal-field">
+        <label>Company</label>
+        <input type="text" id="outreachCompany" placeholder="e.g. Acme Corp" />
+      </div>
+      <div class="modal-field">
+        <label>Role</label>
+        <input type="text" id="outreachRole" placeholder="e.g. Software Engineer" />
+      </div>
+      <div id="outreachLinkCount" style="font-size:11px;color:#888;margin-bottom:6px"></div>
+      <div id="outreachStatus" style="font-size:11px;min-height:14px;margin-top:4px"></div>
+      <div class="modal-actions">
+        <button id="outreachCancelBtn">Cancel</button>
+        <button id="outreachSaveBtn">Save</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Paste JD Image Modal -->
   <div class="modal-overlay" id="pasteJdImgModal" tabindex="-1">
     <div class="modal">
@@ -346,14 +373,14 @@
       </div>
       <div class="history-options-wrap">
         <button id="historyOptionsBtn">≡ Options</button>
-        <div class="history-options-menu" id="historyOptionsMenu">
-          <button id="manageMenuBtn" class="history-menu-top-btn">≡ Manage</button>
+        <div class="dd-menu history-options-menu" id="historyOptionsMenu" style="display:none">
+          <button id="manageMenuBtn" class="dd-item">Manage</button>
           <div class="history-submenu" id="manageSubmenu">
-            <button id="addRecruiterBtn">➕ Add Recruiter</button>
-            <button id="refreshLogosBtn" title="Fetch missing company logos">🖼 Refresh Logos</button>
-            <button id="updateSlugsBtn" title="Fetch canonical slug for every company and store aliases">🔗 Update Slugs</button>
+            <button id="addRecruiterBtn">Add Recruiter</button>
+            <button id="refreshLogosBtn" title="Fetch missing company logos">Refresh Logos</button>
+            <button id="updateSlugsBtn" title="Fetch canonical slug for every company and store aliases">Update Slugs</button>
           </div>
-          <button id="transferMenuBtn" class="history-menu-top-btn">⇵ Export / Import</button>
+          <button id="transferMenuBtn" class="dd-item">Export / Import</button>
           <div class="history-submenu" id="transferSubmenu">
             <div class="history-submenu-label">Export</div>
             <div class="history-submenu-grid">
@@ -369,7 +396,8 @@
             </div>
             <input type="file" id="importFileInput" accept=".json,.csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" style="display:none" />
           </div>
-          <button id="clearHistoryBtn">🗑 Clear All</button>
+          <div class="dd-sep"></div>
+          <button id="clearHistoryBtn" class="dd-item danger">Clear All</button>
         </div>
       </div>
     </div>

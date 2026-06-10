@@ -168,7 +168,7 @@ window.addEventListener('blur', () => {
   const seenClear = document.getElementById('seenClearDropdown');
   if (seenClear) seenClear.style.display = 'none';
   const histOpts = document.getElementById('historyOptionsMenu');
-  if (histOpts) histOpts.classList.remove('open');
+  if (histOpts) histOpts.style.display = 'none';
   const pasteJd = document.getElementById('pasteJdModal');
   if (pasteJd) pasteJd.classList.remove('open');
   const addRecruiter = document.getElementById('addRecruiterModal');

@@ -458,3 +458,85 @@ document.addEventListener('click', e => {
     wrap.style.display = 'none';
   }
 });
+
+// ── Send to Outreach ──────────────────────────────────────────────────────────
+
+window._outreachLinks = [];
+
+document.getElementById('sendToOutreachBtn')?.addEventListener('click', () => {
+  document.getElementById('resultsOptionsMenu').style.display = 'none';
+
+  const checked = [...resultsDiv.querySelectorAll('.recruiter-check:checked')];
+  window._outreachLinks = checked.map(cb => cb.closest('.card')?.dataset.url).filter(Boolean);
+
+  if (window._outreachLinks.length === 0) {
+    const btn = document.getElementById('resultsOptionsBtn');
+    const orig = btn.textContent;
+    btn.textContent = 'Select a recruiter first';
+    btn.style.color = '#c0392b';
+    setTimeout(() => { btn.textContent = orig; btn.style.color = ''; }, 2000);
+    return;
+  }
+
+  const company = document.getElementById('companyName')?.textContent?.trim() || '';
+  const companyRaw = company.charAt(0).toUpperCase() + company.slice(1);
+  document.getElementById('outreachCompany').value = companyRaw;
+  document.getElementById('outreachRole').value = '';
+  document.getElementById('outreachStatus').textContent = '';
+  document.getElementById('outreachSaveBtn').textContent = 'Save';
+  const names = checked.map(cb => cb.closest('.card')?.dataset.name).filter(Boolean);
+  const countEl = document.getElementById('outreachLinkCount');
+  countEl.innerHTML = `${window._outreachLinks.length} recruiter${window._outreachLinks.length !== 1 ? 's' : ''} selected<br><span style="font-size:11px;color:#888">${names.join(', ')}</span>`;
+
+  document.getElementById('outreachModal').classList.add('open');
+  setTimeout(() => document.getElementById('outreachRole').focus(), 50);
+});
+
+async function _saveOutreach() {
+  const companyRaw = document.getElementById('outreachCompany').value.trim() || 'Unknown Company';
+  const company = companyRaw.charAt(0).toUpperCase() + companyRaw.slice(1);
+  const role = document.getElementById('outreachRole').value.trim() || 'Unknown Role';
+  const statusEl = document.getElementById('outreachStatus');
+  const saveBtn = document.getElementById('outreachSaveBtn');
+
+  saveBtn.textContent = 'Saving…';
+  saveBtn.disabled = true;
+
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 8000);
+    const resp = await fetch('http://127.0.0.1:4545/outreach', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      signal: controller.signal,
+      body: JSON.stringify({ company, role, links: window._outreachLinks }),
+    });
+    clearTimeout(timer);
+    const json = await resp.json();
+    if (json.ok) {
+      statusEl.style.color = '#27ae60';
+      statusEl.textContent = '✓ Saved!';
+      setTimeout(() => document.getElementById('outreachModal').classList.remove('open'), 800);
+    } else {
+      throw new Error(json.error || 'Server error');
+    }
+  } catch (err) {
+    statusEl.style.color = '#c0392b';
+    statusEl.textContent = err.name === 'AbortError' ? 'Timed out — is the server running?' : `Failed — ${err.message}`;
+  }
+
+  saveBtn.disabled = false;
+  saveBtn.textContent = 'Save';
+}
+
+document.getElementById('outreachSaveBtn')?.addEventListener('click', _saveOutreach);
+document.getElementById('outreachCancelBtn')?.addEventListener('click', () => {
+  document.getElementById('outreachModal').classList.remove('open');
+});
+document.getElementById('outreachXBtn')?.addEventListener('click', () => {
+  document.getElementById('outreachModal').classList.remove('open');
+});
+document.getElementById('outreachModal')?.addEventListener('click', e => {
+  if (e.target === document.getElementById('outreachModal'))
+    document.getElementById('outreachModal').classList.remove('open');
+});
