@@ -246,7 +246,7 @@ const server = http.createServer((req, res) => {
             `  //   company: "${company}",`,
             `  //   role: "${role}",`,
             `  //   links: [`,
-            ...links.map(l => `  //     "${l}"`),
+            ...links.map((l, i) => `  //     "${l}"${i < links.length - 1 ? ',' : ''}`),
             `  //   ]`,
             `  // }`,
           ].join('\n');
@@ -256,7 +256,7 @@ const server = http.createServer((req, res) => {
             `    company: "${company}",`,
             `    role: "${role}",`,
             `    links: [`,
-            ...links.map(l => `      "${l}"`),
+            ...links.map((l, i) => `      "${l}"${i < links.length - 1 ? ',' : ''}`),
             `    ]`,
             `  }`,
           ].join('\n');
