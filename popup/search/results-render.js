@@ -81,6 +81,7 @@ async function renderResults(data, passedLogoUrl = null) {
       const copyEmailBtn = r.email
         ? `<button class="card-email-btn" data-email="${r.email}">✉ Copy Email</button>`
         : `<button class="card-add-email-btn" data-url="${r.url}">+ Email</button>`;
+      const addPhotoBtn = !r.photoUrl ? `<button class="card-add-photo-btn" data-url="${r.url}">+ Photo</button>` : '';
       html += `
         <div class="card ${cls} ${photoClass}" data-url="${r.url}" data-name="${r.name}" data-title="${r.title || ''}">
           ${photoHtml}
@@ -89,6 +90,7 @@ async function renderResults(data, passedLogoUrl = null) {
           <div class="card-url"><a href="${r.url}" target="_blank">${r.url}</a></div>
           <button class="card-copy-btn" data-url="${r.url}">🔗 Copy Link</button>
           ${copyEmailBtn}
+          ${addPhotoBtn}
           <button class="card-remove-btn" data-url="${r.url}">✕ Remove</button>
         </div>`;
       copyText += `${r.name}\n${r.title}\n${r.url}\n\n`;
@@ -288,6 +290,77 @@ async function renderResults(data, passedLogoUrl = null) {
         if (ev.key === 'Enter') { ev.preventDefault(); input.blur(); }
         if (ev.key === 'Escape') { ev.preventDefault(); input.replaceWith(btn); }
       });
+    });
+  });
+
+  resultsDiv.querySelectorAll('.card-add-photo-btn').forEach(btn => {
+    btn.addEventListener('click', async e => {
+      e.stopPropagation();
+      const url = btn.dataset.url;
+      const orig = btn.textContent;
+      btn.textContent = 'Fetching…';
+      btn.disabled = true;
+
+      try {
+        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        if (!tab?.id || !tab.url?.includes('linkedin.com/in/')) {
+          btn.textContent = 'Open their profile first';
+          btn.style.color = '#c0392b';
+          setTimeout(() => { btn.textContent = orig; btn.style.color = ''; btn.disabled = false; }, 2500);
+          return;
+        }
+
+        const results = await chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          func: () => {
+            // Target the profile photo div specifically by aria-label
+            const photoDiv = document.querySelector('div[aria-label="Profile photo"]');
+            const img = photoDiv?.querySelector('img[src*="media.licdn.com"], img[srcset*="media.licdn.com"]');
+            if (img) {
+              // Prefer a 200px or 400px srcset entry over the tiny 100px default src
+              const srcset = img.getAttribute('srcset') || '';
+              const m = srcset.match(/https:\/\/media\.licdn\.com\/[^\s,]+profile-displayphoto[^\s,]*(?:_200_200|_400_400)[^\s,]*/);
+              if (m) return m[0];
+              return img.src.startsWith('http') ? img.src : null;
+            }
+            // Fallback: legacy selectors
+            const legacy =
+              document.querySelector('.pv-top-card-profile-picture__image, .profile-photo-edit__preview')
+              || document.querySelector('button[aria-label*="photo" i] img[src*="media.licdn.com"]');
+            const src = legacy?.src || legacy?.getAttribute('data-delayed-url') || '';
+            return src.startsWith('http') ? src : null;
+          }
+        });
+
+        const photoUrl = results?.[0]?.result;
+        if (!photoUrl) {
+          btn.textContent = 'No photo found';
+          btn.style.color = '#c0392b';
+          setTimeout(() => { btn.textContent = orig; btn.style.color = ''; btn.disabled = false; }, 2000);
+          return;
+        }
+
+        const ok = await upsertRecruiterPhoto(currentSlug, url, photoUrl);
+        if (ok) {
+          const card = btn.closest('.card');
+          const img = document.createElement('img');
+          img.className = 'recruiter-photo';
+          img.src = photoUrl;
+          img.alt = '';
+          img.addEventListener('error', () => { img.style.display = 'none'; card?.classList.remove('has-photo'); });
+          card?.classList.add('has-photo');
+          card?.insertBefore(img, card.firstChild);
+          btn.remove();
+        } else {
+          btn.textContent = 'Not found in cache';
+          btn.style.color = '#c0392b';
+          setTimeout(() => { btn.textContent = orig; btn.style.color = ''; btn.disabled = false; }, 2000);
+        }
+      } catch (err) {
+        btn.textContent = 'Error';
+        btn.style.color = '#c0392b';
+        setTimeout(() => { btn.textContent = orig; btn.style.color = ''; btn.disabled = false; }, 2000);
+      }
     });
   });
 

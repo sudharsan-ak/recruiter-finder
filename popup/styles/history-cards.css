@@ -99,6 +99,14 @@
 }
 .company-li-link:hover { opacity: 1; }
 
+.refresh-logo-btn {
+  font-size: 11px; background: none; border: none; cursor: pointer;
+  color: #0a66c2; opacity: 0.5; padding: 0 2px; flex-shrink: 0;
+  transition: opacity 0.15s; line-height: 1;
+}
+.refresh-logo-btn:hover { opacity: 1; }
+.refresh-logo-btn:disabled { cursor: default; }
+
 .rename-input {
   font-size: 13px;
   font-weight: 700;

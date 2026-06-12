@@ -75,6 +75,13 @@
   text-overflow: ellipsis;
 }
 
+#historyStopBtn {
+  font-size: 10px; padding: 2px 8px; border-radius: 8px;
+  border: 1px solid #c0392b; background: none; color: #c0392b;
+  cursor: pointer; white-space: nowrap; flex-shrink: 0;
+}
+#historyStopBtn:hover { background: #fdecea; }
+
 #historySort {
   flex-shrink: 0;
   background: white;

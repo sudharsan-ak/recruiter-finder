@@ -95,7 +95,11 @@ document.getElementById('updateSlugsBtn').addEventListener('click', async () => 
     return out;
   };
 
+  if (historyStopBtn) historyStopBtn.style.display = '';
+  window._bulkStopRequested = false;
+
   for (let i = 0; i < slugs.length; i++) {
+    if (window._bulkStopRequested) break;
     const slug = slugs[i];
     if (!cache[slug]) continue; // entry may already have been migrated earlier in this run
     globalThis.setHistoryActionStatus?.(`Updating ${i + 1}/${slugs.length}`, 0);
@@ -153,9 +157,11 @@ document.getElementById('updateSlugsBtn').addEventListener('click', async () => 
     await new Promise(r => setTimeout(r, 400));
   }
 
+  if (historyStopBtn) historyStopBtn.style.display = 'none';
   await chrome.storage.local.set({ [CACHE_KEY]: cache, companySlugMap: slugMap });
   await syncHistoryAliasesFromSlugMap();
-  globalThis.setHistoryActionStatus?.(`Update slugs done: ${updated} updated`);
-  btn.textContent = `✅ Done — ${updated} slug${updated !== 1 ? 's' : ''} updated`;
+  const stopMsg = window._bulkStopRequested ? ' (stopped)' : '';
+  globalThis.setHistoryActionStatus?.(`Update slugs done: ${updated} updated${stopMsg}`);
+  btn.textContent = `✅ Done — ${updated} updated`;
   setTimeout(() => { btn.textContent = '🔗 Update Slugs'; }, 3000);
 });

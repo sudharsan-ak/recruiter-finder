@@ -123,6 +123,7 @@ async function renderHistory(filter = '') {
             ${entry.employeeCount ? `<span class="history-emp-count">(${fmtEmpCount(entry.employeeCount)})</span>` : ''}
             <button class="rename-company-btn" data-slug="${slug}" title="Rename company">✏️</button>
             <a class="company-li-link" href="https://www.linkedin.com/company/${slug}/" target="_blank" title="View on LinkedIn">↗</a>
+            <button class="refresh-logo-btn" data-slug="${slug}" title="Refresh company logo">↺</button>
           </div>
           <div class="history-meta">${recruiters.length} recruiters<br>${dateStr}</div>
           <button class="delete-entry-btn" data-slug="${slug}" title="Delete this entry">🗑</button>
@@ -177,6 +178,11 @@ async function renderHistory(filter = '') {
       fallback.className = 'company-logo-fallback';
       fallback.textContent = img.dataset.initials || '?';
       img.replaceWith(fallback);
+      // Clear stale URL from cache so Refresh Logos re-fetches it
+      const slug = img.closest('.history-company')?.id?.replace(/^hc-/, '');
+      if (slug) getCache().then(c => {
+        if (c[slug]) { c[slug].logoUrl = null; chrome.storage.local.set({ [CACHE_KEY]: c }); }
+      });
     });
   });
   historyList.querySelectorAll('img.h-photo').forEach(img => {
@@ -674,6 +680,56 @@ async function renderHistory(filter = '') {
   }
 
   document.querySelectorAll('.add-alias-btn').forEach(wireAddAliasBtn);
+
+  document.querySelectorAll('.refresh-logo-btn').forEach(btn => {
+    btn.addEventListener('click', async e => {
+      e.stopPropagation();
+      const slug = btn.dataset.slug;
+      const orig = btn.textContent;
+      btn.textContent = '…';
+      btn.disabled = true;
+
+      try {
+        const response = await new Promise(resolve =>
+          chrome.runtime.sendMessage({ action: 'fetchLogo', companySlug: slug }, resolve)
+        );
+        const logoUrl = response?.logoUrl || null;
+        if (logoUrl) {
+          const fresh = await getCache();
+          if (fresh[slug]) {
+            fresh[slug].logoUrl = logoUrl;
+            await new Promise(r => chrome.storage.local.set({ [CACHE_KEY]: fresh }, r));
+          }
+          const card = document.getElementById(`hc-${slug}`);
+          const existing = card?.querySelector('.company-logo, .company-logo-fallback');
+          if (existing) {
+            const img = document.createElement('img');
+            img.className = 'company-logo';
+            img.src = logoUrl;
+            img.alt = '';
+            const initials = existing.textContent || '?';
+            img.addEventListener('error', () => {
+              const fb = document.createElement('div');
+              fb.className = 'company-logo-fallback';
+              fb.textContent = initials;
+              img.replaceWith(fb);
+            });
+            existing.replaceWith(img);
+          }
+          btn.textContent = '✓';
+          setTimeout(() => { btn.textContent = orig; btn.disabled = false; }, 2000);
+        } else {
+          btn.textContent = '?';
+          btn.style.color = '#c0392b';
+          setTimeout(() => { btn.textContent = orig; btn.style.color = ''; btn.disabled = false; }, 2000);
+        }
+      } catch {
+        btn.textContent = '!';
+        btn.style.color = '#c0392b';
+        setTimeout(() => { btn.textContent = orig; btn.style.color = ''; btn.disabled = false; }, 2000);
+      }
+    });
+  });
 
   document.querySelectorAll('.rename-company-btn').forEach(btn => {
     btn.addEventListener('click', e => {

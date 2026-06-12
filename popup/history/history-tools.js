@@ -1,3 +1,7 @@
+window.window._bulkStopRequested = false;
+const historyStopBtn = document.getElementById('historyStopBtn');
+historyStopBtn?.addEventListener('click', () => { window.window._bulkStopRequested = true; });
+
 const modal        = document.getElementById('addRecruiterModal');
 const modalError   = document.getElementById('modalError');
 const modalSaveBtn = document.getElementById('modalSaveBtn');
@@ -49,10 +53,23 @@ globalThis.openConfirmModal = openConfirmModal;
 
 async function backfillLogos() {
   const cache = await getCache();
-  const missing = Object.keys(cache).filter(slug => !cache[slug].logoUrl);
-  if (missing.length === 0) return;
+  // Include companies with no logoUrl OR whose logo is currently showing as a letter fallback in the DOM
+  const slugs = Object.keys(cache).filter(slug => {
+    if (!cache[slug].logoUrl?.trim()) return true;
+    const card = document.getElementById(`hc-${slug}`);
+    return !!card?.querySelector('.company-logo-fallback');
+  });
+  if (slugs.length === 0) return;
 
-  for (const slug of missing) {
+  window._bulkStopRequested = false;
+  if (historyStopBtn) historyStopBtn.style.display = '';
+  const hideStop = () => { if (historyStopBtn) historyStopBtn.style.display = 'none'; };
+
+  for (let i = 0; i < slugs.length; i++) {
+    if (window._bulkStopRequested) break;
+    const slug = slugs[i];
+    globalThis.setHistoryActionStatus?.(`Refreshing logos… ${i + 1}/${slugs.length}`, 0);
+    refreshLogosBtn.textContent = `⏳ ${i + 1}/${slugs.length}`;
     try {
       const response = await new Promise(resolve =>
         chrome.runtime.sendMessage({ action: 'fetchLogo', companySlug: slug }, resolve)
@@ -61,22 +78,30 @@ async function backfillLogos() {
 
       if (logo) {
         const fresh = await getCache();
-        if (fresh[slug] && !fresh[slug].logoUrl) {
+        if (fresh[slug]) {
           fresh[slug].logoUrl = logo;
           await new Promise(r => chrome.storage.local.set({ [CACHE_KEY]: fresh }, r));
-          const fallback = document.querySelector(`#hc-${slug} .company-logo-fallback`);
-          if (fallback) {
+          const card = document.getElementById(`hc-${slug}`);
+          const existing = card?.querySelector('.company-logo, .company-logo-fallback');
+          if (existing) {
             const img = document.createElement('img');
             img.className = 'company-logo';
             img.src = logo;
             img.alt = '';
-            img.addEventListener('error', () => img.replaceWith(fallback));
-            fallback.replaceWith(img);
+            const initials = existing.textContent || '?';
+            img.addEventListener('error', () => {
+              const fb = document.createElement('div');
+              fb.className = 'company-logo-fallback';
+              fb.textContent = initials;
+              img.replaceWith(fb);
+            });
+            existing.replaceWith(img);
           }
         }
       }
     } catch {}
   }
+  hideStop();
 }
 globalThis.backfillLogos = backfillLogos;
 

@@ -80,6 +80,17 @@ async function upsertRecruiterEmail(slug, url, email) {
   return true;
 }
 
+async function upsertRecruiterPhoto(slug, url, photoUrl) {
+  const cache = await getCache();
+  if (!cache[slug]) return false;
+  const normalizedUrl = normalizeRecruiterUrl(url);
+  const recruiter = cache[slug].recruiters.find(r => normalizeRecruiterUrl(r.url) === normalizedUrl);
+  if (!recruiter) return false;
+  recruiter.photoUrl = photoUrl;
+  await new Promise(resolve => chrome.storage.local.set({ [CACHE_KEY]: cache }, resolve));
+  return true;
+}
+
 async function renameCompanyInCache(slug, newName) {
   const cache = await getCache();
   if (!cache[slug]) return;
